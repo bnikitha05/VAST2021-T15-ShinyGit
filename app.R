@@ -58,6 +58,14 @@ df_tidyclean_bigram_tfidf <- df_tidyclean_bigram %>%
 
 
 ui <- navbarPage("Team 15 Project",
+                 tabPanel("Introduction",
+                            titlePanel("Introduction to Team 15's Shiny App"),
+                            fluidRow(
+                                column(8,"This Shiny App is built by Team 15 of SMU AY2020-2021 Sem 3
+                                       ISSS608. The project tackles the VAST2021 Challenge, focusing
+                                       on Mini-Challenges 1 and 3.")
+                            )
+                 ),
                  navbarMenu("Mini-Challenge 1 Q1",
                             tabPanel("Part 1",
                             ),
