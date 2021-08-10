@@ -10,6 +10,42 @@ library(tmap)
 library(tidytext)
 library(tidyverse)
 
+# MC1 Prep
+
+
+
+
+
+
+
+
+# MC1 Q1
+
+
+
+
+
+
+
+
+# MC1 Q2
+
+
+
+
+
+
+
+
+# MC1 Q3
+
+
+
+
+
+
+
+
 # MC3 Prep
 
 df_1 = read_csv("data/csv-1700-1830.csv")
@@ -32,7 +68,9 @@ author <- df %>%
   count(author) %>%
   select(author)
 
-js_author = c("KronosQuoth", "ClevvahEvah")
+set.seed(2021)
+
+js_author = c("KronosQuoth", "Clevvah4Evah")
 df_rmjs <- df %>%
   filter(!author %in% js_author)
 
@@ -45,6 +83,16 @@ df_tidyclean <- df_rmjs %>%
 
 df_tc_wordcloud <- df_tidyclean %>%
   count(word, sort = T)
+
+df_tidyclean_tfidf <- df_tidyclean %>%
+    group_by(word) %>%
+    mutate(total_count = n()) %>%
+    ungroup() %>%
+    filter(total_count > 2) %>%
+    select(-total_count) %>%
+    count(hour, word) %>%
+    bind_tf_idf(word, hour, n) %>%
+    arrange(desc(tf_idf))
 
 df_tidyclean_bigram <- df_rmjs %>%
   filter(type == "mbdata") %>%
@@ -224,11 +272,19 @@ ui <- navbarPage("Team 15 Project", theme = shinytheme("sandstone"),
                                      titlePanel("Exploring the Topics - Wordcloud"),
                                      sidebarLayout(
                                        sidebarPanel(
-                                         # consider adding authors and stopwords to the inputs
+                                           sliderInput(inputId = "min_wordcount",
+                                                       label = "Minimum Wordcount for Inclusion:",
+                                                       min = 4, max = 40, value = 10),
+                                           sliderInput(inputId = "wc_size",
+                                                       label = "Wordcloud Size:",
+                                                       min = 6, max = 24, value = 12),
+                                           radioButtons(inputId = "wordcloud_type",
+                                                        label = "Wordcloud Type",
+                                                        choices = c("Single","Multiple (by hour)"),
+                                                        selected = "Single")
                                        ),
                                        mainPanel(
-                                         plotOutput("Wordcloud_single"),
-                                         plotOutput("Wordcloud_by_hour")
+                                           plotOutput("Wordcloud")
                                        )
                                      )
                             ),
@@ -236,13 +292,23 @@ ui <- navbarPage("Team 15 Project", theme = shinytheme("sandstone"),
                                      titlePanel("Exploring the Topics - TF-IDF"),
                                      sidebarLayout(
                                        sidebarPanel(
-                                         # consider adding authors and stopwords to the inputs
+                                           radioButtons(inputId = "tfidf_type",
+                                                        label = "Type of TF-IDF Plot",
+                                                        choices = c("Unigram (single word)",
+                                                                    "Bigram (word pair)"),
+                                                        selected = "Unigram (single word)"),
+                                           sliderInput(inputId = "top_n",
+                                                       label = "Filter for top N words by TF-IDF:",
+                                                       min = 5, max = 20, value = 10),
+                                           "Note: more than N words may appear because
+                                           of equal tf-idf ranking",
+                                           checkboxInput(inputId = "show_data1",
+                                                         label = "Show data table",
+                                                         value = F)
                                        ),
                                        mainPanel(
-                                         tabsetPanel(
-                                           tabPanel("Plot", plotOutput("TfidfBigram")),
-                                           tabPanel("DT", dataTableOutput(outputId = "Tfidf_DT"))
-                                         )
+                                           plotOutput("Tfidf"), 
+                                           dataTableOutput(outputId = "Tfidf_DT")
                                        )
                                      )
                             )
@@ -338,35 +404,64 @@ server <- function(input, output) {
     ) %>% formatDate(1, "toLocaleString")
   })
   
-  output$Wordcloud_single <- renderPlot({
-    wordcloud(df_tc_wordcloud$word, df_tc_wordcloud$n, max.words = 100)
+  # output$Wordcloud_single <- renderPlot({
+  #   wordcloud(df_tc_wordcloud$word, df_tc_wordcloud$n, max.words = 100)
+  # })
+
+  
+  output$Wordcloud <- renderPlot({
+      
+      if(input$wordcloud_type == "Single"){
+          df_tidyclean %>%
+              count(word, sort = T) %>%
+              filter(n > input$min_wordcount) %>%
+              ggplot(aes(label = word, size = n)) + geom_text_wordcloud(rm_outside = T) +
+              scale_size_area(max_size = input$wc_size)
+      }else{
+          df_tidyclean %>%
+              count(hour, word, sort = T) %>%
+              filter(n > input$min_wordcount) %>%
+              ggplot(aes(label = word, size = n)) + geom_text_wordcloud(rm_outside = T) +
+              scale_size_area(max_size = input$wc_size) +
+              facet_wrap(~hour)
+      }
+      
   })
   
-  output$Wordcloud_by_hour <- renderPlot({
-    df_tidyclean %>%
-      count(hour, word, sort = T) %>%
-      filter(n > 10) %>%
-      ggplot(aes(label = word, size = n)) + geom_text_wordcloud(rm_outside = T) +
-      facet_wrap(~hour)
-  })
   
-  output$TfidfBigram <- renderPlot({
-    df_tidyclean_bigram_tfidf %>%
-      group_by(hour) %>%
-      slice_max(tf_idf, 
-                n = 12) %>% # more may appear because of equal tf-idf rank
-      ungroup() %>%
-      mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
-      ggplot(aes(tf_idf, bigram, fill = hour)) +
-      geom_col(show.legend = FALSE) +
-      facet_wrap(~ hour, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+  output$Tfidf <- renderPlot({
+      
+      if(input$tfidf_type == "Unigram (single word)"){
+          df_tidyclean_tfidf %>%
+              group_by(hour) %>%
+              slice_max(tf_idf, 
+                        n = input$top_n) %>%
+              ungroup() %>%
+              mutate(word = reorder_within(word, tf_idf, hour)) %>%
+              ggplot(aes(tf_idf, word, fill = hour)) +
+              geom_col(show.legend = FALSE) +
+              facet_wrap(~ hour, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+      }else{
+          df_tidyclean_bigram_tfidf %>%
+              group_by(hour) %>%
+              slice_max(tf_idf, 
+                        n = input$top_n) %>% 
+              ungroup() %>%
+              mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
+              ggplot(aes(tf_idf, bigram, fill = hour)) +
+              geom_col(show.legend = FALSE) +
+              facet_wrap(~ hour, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+      }
   })
   
   output$Tfidf_DT <- DT::renderDataTable({
-    df_rmjs %>%
-      mutate(message = iconv(message,"UTF-8","UTF-8","")) %>%
-      select(message, hour, min, author) %>%
-      datatable(options = list(search = list(search = "alexandrias ithakis")))
+      if(input$show_data1){
+          df_rmjs %>%
+              mutate(message = iconv(message,"UTF-8","UTF-8","")) %>%
+              select(dt, message, author) %>%
+              datatable(options = list(search = list(search = "alexandrias ithakis"))) %>%
+              formatDate(1, "toLocaleString")
+      }
   })
   
   # output$CCDataGraphTable <- renderPlotly({
