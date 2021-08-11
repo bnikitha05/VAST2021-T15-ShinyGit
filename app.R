@@ -3,16 +3,13 @@ library(shinythemes)
 library(clock)
 library(DT)
 library(plotly)
-library(wordcloud)
 library(ggwordcloud)
 library(sf)
 library(tmap)
-library(tidytext)
-library(tidyverse)
 library(wordcloud2)
 library(shinydashboard)
 
-packages = c('tidyverse','tm','wordcloud','tidytext')
+packages = c('tidyverse','tm','wordcloud','tidytext','ggwordcloud','udpipe','textplot','widyr','RColorBrewer')
 for(p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)
@@ -22,8 +19,7 @@ for(p in packages){
 
 library(devtools)
 install_github("cbail/textnets")
-
-packages = c('textnets','dplyr','Matrix','tidytext','stringr','SnowballC','reshape2','igraph','ggraph','networkD3')
+packages = c('textnets','dplyr','Matrix','stringr','SnowballC','reshape2','igraph','ggraph','networkD3')
 for(p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)
@@ -31,34 +27,7 @@ for(p in packages){
   library(p, character.only = T)
 }
 
-packages = c('ggwordcloud')
-for(p in packages){
-  if(!require(p, character.only = T)){
-    install.packages(p)
-  }
-  library(p, character.only = T)
-}
-packages = c('tidytext','udpipe','textplot')
-for(p in packages){
-  if(!require(p, character.only = T)){
-    install.packages(p)
-  }
-  library(p, character.only = T)
-}
-packages = c('widyr')
-for(p in packages){
-  if(!require(p, character.only = T)){
-    install.packages(p)
-  }
-  library(p, character.only = T)
-}
-packages = c('RColorBrewer','wordcloud')
-for(p in packages){
-  if(!require(p, character.only = T)){
-    install.packages(p)
-  }
-  library(p, character.only = T)
-}
+
 # MC1 Data Processing
 
 #Read data from Excel
@@ -70,8 +39,6 @@ newsgroup <- sort(newsgroup)
 newsgroup1 <- unique(articles$newsgroup)
 newsgroup1[length(newsgroup1)+1] <- "select a value below"
 newsgroup1 <- sort(newsgroup1)
-
-
 clusters=c(1,2,3,4,5,6)
 
 #Preparing data for textnet
@@ -88,7 +55,7 @@ text_communities <- TextCommunities(news_text_network)
 articles$cluster=text_communities$modularity_class[match(articles$newsgroup,text_communities$
                                                            group)]
 
-
+#Preparing data for wordcloude and correlation graphs
 usenet_words <- articles %>%
   unnest_tokens(word, Content) %>%
   filter(str_detect(word, "[a-z']$"),
@@ -96,15 +63,6 @@ usenet_words <- articles %>%
 words_by_newsgroup <- usenet_words %>%
   count(newsgroup, word, sort = TRUE) %>%
   ungroup()
-
-
-
-
-
-
-
-
-
 
 # MC3 Prep
 
@@ -309,7 +267,6 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                          ),
                                          hr(),
                                          selectInput(inputId="newsgroup","Newsgroup",newsgroup, multiple = TRUE,selected=c("News Online Today", "The World","Centrum Sentinel")),
-                                         
                                        ),
                                        conditionalPanel(condition="input.tabselected==2",
                                                         checkboxGroupInput("variable", "Variables to show:",
@@ -317,36 +274,33 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                                              )),h5("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,    
                                        ),
                                        conditionalPanel(condition="input.tabselected==3",
-                                                        selectInput(inputId="cluster","Cluster",choices=clusters,selected=1)
-                                                        
+                                                        selectInput(inputId="cluster","Cluster",choices=clusters,selected=1)               
                                        ),
                                        conditionalPanel(condition="input.tabselected==4",
                                                         sliderInput(inputId="value","Correlation Range",min=0,max=1,value=c(0.9,1.0),sep="",animate=FALSE),
                                                         checkboxInput("option", "Compare Newsgroups with WordClound", FALSE),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
+                                                          hr(),
                                                           selectInput(inputId="option1","Select the first newsgroup",choices=newsgroup,selected="The World")
                                                         ),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
-                                                          hr(),
                                                           numericInput("num", "Maximum number of words",
                                                                        value = 80, min = 5
                                                           )
                                                         ),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
+                                                          hr(),
                                                           selectInput(inputId="option2","Select the second newsgroup",choices=newsgroup1,selected = "select a value below")
                                                         ),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
-                                                          hr(),
                                                           numericInput("num1", "Maximum number of words",
                                                                        value = 80, min = 5
                                                           )
                                                         )
-                                                        
-                                                        
                                        )
                                        ),
                                        
@@ -356,21 +310,16 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                            tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),fluidRow((forceNetworkOutput("textnet"))),value=2),
                                            tabPanel("Text Plot",icon = icon("fas fa-cloud"), plotOutput("textplot",  width = "100%"),value=3),
                                            tabPanel("Correlation Graph",icon = icon("fas fa-cloud"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
-                                           
                                          ) 
                                        )
                                      ),
-                                     
                             ),
-                            
                             tabPanel("Network Graph"
                                      
                             )
                  ),
                  
-                 
-                 
-                 
+
                  navbarMenu("Mini-Challenge 3 Q1",
                             tabPanel("Part 1",
                                      titlePanel("Exploring the Authors"),
@@ -502,9 +451,9 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
 )
 
 server <- function(input, output) {
-  ##mc1 server
+  ##history of Gastech server
   
-  ###comaprision cloud
+  ###1)comaprision cloud
   data_source <- reactive({
     subdata <- subset(articles,articles$newsgroup %in% input$newsgroup)
     
@@ -549,7 +498,7 @@ server <- function(input, output) {
   )
   
   
-  ###3D
+  ###2) 3D Visualization
   output$textnet <- renderForceNetwork({
     req(input$variable)
     if(input$variable==1){
@@ -576,7 +525,7 @@ server <- function(input, output) {
   )
   
   
-  ###textplot
+  ###3) textplot
   output$textplot <- renderPlot({
     x <- subset(usenet_words, cluster == input$cluster)
     x <- cooccurrence(x, group = "id", term = "word")
@@ -585,7 +534,7 @@ server <- function(input, output) {
   )
   
   
-  ###correlation
+  ###4) correlation
   create_correlationplot <- function(newsgroup_cors, value ) {
     set.seed(123)
     newsgroup_cors %>%
@@ -603,7 +552,6 @@ server <- function(input, output) {
   }
   
   output$correlation <- renderPlot({
-    #correlation calculation
     newsgroup_cors <- words_by_newsgroup %>%
       pairwise_cor(newsgroup, 
                    word, 
@@ -614,9 +562,7 @@ server <- function(input, output) {
     )
   }
   )
-  
-  
-  ###wordclouds
+  ###5) wordclouds
   output$wordcloudd1 <- renderWordcloud2({
     if(input$option==1){
     subdata1=articles %>% filter(newsgroup %in% input$option1)
