@@ -9,26 +9,53 @@ library(sf)
 library(tmap)
 library(tidytext)
 library(tidyverse)
+library(shinydashboard)
+
+packages = c('tidyverse','tm','wordcloud','tidytext')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+
+library(devtools)
+install_github("cbail/textnets")
+
+packages = c('textnets','dplyr','Matrix','tidytext','stringr','SnowballC','reshape2','igraph','ggraph','networkD3')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+
+packages = c('ggwordcloud')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+
 
 # MC1 Prep
 
+#Read data from Excel
+articles=read_csv("data/cleanArticles.csv")
+
+newsgroup <- unique(articles$newsgroup)
+newsgroup <- sort(newsgroup)
 
 
-
-
-
-
-
-# MC1 Q1
-
-
-
-
-
-
-
-
-# MC1 Q2
+articles$Published=as.Date(articles$Published,format="%Y-%m-%d")
+textNet_data=articles %>%
+  group_by(newsgroup) %>%
+  summarise_all(funs(toString(na.omit(.))))
+textNet_data=textNet_data[,!(names(textNet_data) %in% c("id","Location","Published","Title"))]
+news_text_data <- PrepText(textNet_data, textvar="Content", groupvar="newsgroup", node_type = "groups",
+                           remove_stop_words=TRUE, remove_numbers=TRUE)
+news_text_network <- CreateTextnet(news_text_data)
 
 
 
@@ -137,7 +164,7 @@ df_tidyclean_afinn <- df_tidyclean %>%
   summarise(net_sentiment = sum(value)) %>%
   ungroup
 
-df_tidyclean_nrc <- df_tidyclean %>% 
+ydf_tidyclean_nrc <- df_tidyclean %>% 
   left_join(get_sentiments("nrc")) %>%
   drop_na(sentiment) %>%
   filter(sentiment == "fear" | sentiment == "surprise") %>%
@@ -224,33 +251,58 @@ df_mbdata_gps_point_sentiment <- df_mbdata_gps_point %>%
 
 # UI
 
-ui <- navbarPage("Team 15 Project", theme = shinytheme("sandstone"),
+ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                  tabPanel("Introduction",
-                          titlePanel("Introduction to Team 15's Shiny App"),
+                          titlePanel("Introduction to Group 15's Shiny App"),
                           fluidRow(
                             column(8,"This Shiny App is built by Team 15 of SMU AY2020-2021 Sem 3
                                        ISSS608. The project tackles the VAST2021 Challenge, focusing
                                        on Mini-Challenges 1 and 3.")
                           )
                  ),
-                 navbarMenu("Mini-Challenge 1 Q1",
-                            tabPanel("Part 1",
+                 navbarMenu("History of GASTech",
+                            tabPanel("Text Analysis",
+                                     titlePanel(HTML("<center>Text Analysis</center>")),
+                                     sidebarLayout(
+                                       sidebarPanel(
+                                         conditionalPanel(condition="input.tabselected==1",h4("test"),
+                                         radioButtons(
+                                           inputId = "source",
+                                           label = "Word source",
+                                           choices = c(
+                                             "Content" = "content",
+                                             "Titles" = "title"
+                                           )
+                                         ),
+                                         hr(),
+                                         selectInput(inputId="newsgroup","Newsgroup",newsgroup, multiple = TRUE,selected=c("News Online Today", "The World","Centrum Sentinel")),
+                                         
+                                       ),
+                                       conditionalPanel(condition="input.tabselected==2",
+                                                        checkboxGroupInput("variable", "Variables to show:",
+                                                                           c("Show 3D Visualization" = 1
+                                                                             )),h5("Note: If the checkboz is selected, please scroll down to view the 3D visualization.") ,    
+                                       ),width = 4
+                                       ),
+                                       mainPanel(
+                                         tabsetPanel(type="tabs",id="tabselected",selected=1,
+                                           tabPanel("Comparision Cloud of Articles",icon = icon("fas fa-cloud"), plotOutput("cloud",  width = "100%"),value=1),
+                                           tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),fluidRow((forceNetworkOutput("textnet"))),value=2)
+                                           
+                                         ) 
+                                       )
+                                     ),
+                                     
                             ),
-                            tabPanel("Part 2"),
-                            tabPanel("Part 3")
+                            
+                            
+                            tabPanel("Network Graph"),
+                            tabPanel("Timeline")
                  ),
-                 navbarMenu("Mini-Challenge 1 Q2",
-                            tabPanel("Part 1",
-                            ),
-                            tabPanel("Part 2"),
-                            tabPanel("Part 3")
-                 ),
-                 navbarMenu("Mini-Challenge 1 Q3",
-                            tabPanel("Part 1",
-                            ),
-                            tabPanel("Part 2"),
-                            tabPanel("Part 3")
-                 ),
+                 
+                 
+                 
+                 
                  navbarMenu("Mini-Challenge 3 Q1",
                             tabPanel("Part 1",
                                      titlePanel("Exploring the Authors"),
@@ -382,6 +434,94 @@ ui <- navbarPage("Team 15 Project", theme = shinytheme("sandstone"),
 )
 
 server <- function(input, output) {
+  ##mc1 server
+  ###comaprision cloud
+  #Get data depending on input (title/content, newsgroup)
+  data_source <- reactive({
+    subdata <- subset(articles,articles$newsgroup %in% input$newsgroup)
+    
+    if (input$source == "title") {
+      #data <- paste(subdata$Title,collapse=" ")
+      data=subdata %>%
+        group_by(newsgroup) %>%
+        summarise_all(funs(toString(na.omit(.))))
+      data=data$Title
+    }
+    else if (input$source == "content") {
+      #data <- paste(subdata$Content,collapse=" ")
+      data=subdata %>%
+        group_by(newsgroup) %>%
+        summarise_all(funs(toString(na.omit(.))))
+      data=data$Content
+    }
+    
+    return(data)
+  })
+  
+  create_wordcloud <- function(data, newsgroup ) {
+    
+    #punctuation removal
+    data=gsub(pattern="\\W",replace=" ",data)
+    #digits removal
+    data=gsub(pattern="\\d",replace=" ",data)
+    data=tolower(data)
+    #stopwords
+    data=removeWords(data,stopwords("english"))
+    #remove single letters
+    data=gsub(pattern="\\b[A-z]\\b{1}",replace=" ",data)
+    #remove white space
+    data=stripWhitespace(data)
+    
+    corpus=Corpus(VectorSource(data))
+    tdm=TermDocumentMatrix(corpus)
+    
+    
+    m=as.matrix(tdm)
+    colnames(m)=newsgroup
+    comparison.cloud(m,max.words = 100,random.order=FALSE,colors=brewer.pal(max(5,ncol(m)),"Dark2") ,title.size=1,
+                     title.colors=NULL, match.colors=FALSE,
+                     title.bg.colors="grey90")
+    
+    
+  }
+  
+  output$cloud <- renderPlot({
+    create_wordcloud(data_source(),
+                     newsgroup = input$newsgroup
+                     
+    )
+  }, height = 700, width = 800 
+  )
+  
+  ###3D
+  output$textnet <- renderForceNetwork({
+    req(input$variable)
+    if(input$variable==1){
+      VisTextNetD3(news_text_network, .30)}
+  }
+  )
+  
+  output$tn <- renderPlot({
+    VisTextNet(news_text_network, .30, label_degree_cut=1)
+  }
+  )
+
+  output$cluster <- renderPlot({
+    text_communities <- TextCommunities(news_text_network)
+    ggplot(text_communities %>% filter(modularity_class %in% c(1,2,3,4,5,6)), 
+           aes(label=group, 
+               color=modularity_class)) +
+      geom_text_wordcloud(eccentricity = 1) +
+      scale_size_area(max_size = 15) +
+      theme_minimal() +  
+      ggtitle("Segmentation of Newsgroups into Clusters")+
+      theme(plot.title = element_text(hjust = 0.5))+
+      facet_wrap(~modularity_class)
+  }
+  )
+  
+  
+  ##mc3 server
   
   output$AuthorCount <- renderPlot({
     df %>%
