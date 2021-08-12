@@ -30,7 +30,6 @@ library(textplot)
 library(widyr)
 #packages required for Text Net 
 library(devtools)
-install_github("cbail/textnets")
 library(textnets)
 library(dplyr)
 library(Matrix)
@@ -421,15 +420,18 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                  ),
                  
 
-                 navbarMenu("Mini-Challenge 3 Q1",
-                            tabPanel("Part 1",
-                                     titlePanel("Exploring the Authors"),
+                 navbarMenu("Message Stream Exploration",
+                            tabPanel("Author Spam",
+                                     titlePanel("Exploring Authors for Spam"),
                                      sidebarLayout(
                                        sidebarPanel(
+                                         "Showing authors with the most messages
+                                                    across time:",
                                          plotOutput("AuthorCount"),
                                          br(),
                                          selectInput(inputId = "author_chosen",
-                                                     label = "Choose author to display messages: ",
+                                                     label = "Choose author to display messages
+                                                     for data table on the right: ",
                                                      choices = author,
                                                      selected = "KronosQuoth")
                                        ),
@@ -438,8 +440,8 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                        )
                                      )
                             ),
-                            tabPanel("Part 2",
-                                     titlePanel("Exploring the Topics - Wordcloud"),
+                            tabPanel("Word Cloud",
+                                     titlePanel("Exploring Key Topics - Wordcloud"),
                                      sidebarLayout(
                                        sidebarPanel(
                                            sliderInput(inputId = "min_wordcount",
@@ -458,8 +460,8 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                        )
                                      )
                             ),
-                            tabPanel("Part 3",
-                                     titlePanel("Exploring the Topics - TF-IDF"),
+                            tabPanel("TF-IDF Keywords",
+                                     titlePanel("Exploring Key Topics - Keywords via TF-IDF"),
                                      sidebarLayout(
                                        sidebarPanel(
                                            radioButtons(inputId = "tfidf_type",
@@ -473,7 +475,8 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                            "Note: more than N words may appear because
                                            of equal tf-idf ranking",
                                            checkboxInput(inputId = "show_data1",
-                                                         label = "Show data table",
+                                                         label = "Show data table (to understand
+                                                         context of keywords)",
                                                          value = F)
                                        ),
                                        mainPanel(
@@ -483,8 +486,8 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                      )
                             )
                  ),
-                 navbarMenu("Mini-Challenge 3 Q2",
-                            tabPanel("Part 1",
+                 navbarMenu("Risk Level Timeline",
+                            tabPanel("By Call Centre Reports",
                                      titlePanel("Investigating Call Centre reports over time"),
                                      sidebarLayout(
                                        sidebarPanel(
@@ -514,7 +517,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                        )
                                      )
                             ),
-                            tabPanel("Part 2",
+                            tabPanel("By Microblog Messages",
                                      titlePanel("Investigating Microblog messages over time"),
                                      sidebarLayout(
                                        sidebarPanel(
@@ -542,7 +545,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                      )
                             )
                  ),
-                 tabPanel("Mini-Challenge 3 Q3",
+                 tabPanel("Message Stream Geomap",
                           titlePanel("Geomap of messages with geo-located data"),
                           sidebarLayout(
                             sidebarPanel(
@@ -827,9 +830,7 @@ server <- function(input, output) {
       top_n(10,n) %>%
       mutate(author = reorder_within(author,n,hour)) %>%
       ggplot(aes(x = n, y = author, fill = hour)) + geom_col(show.legend = F) +
-      facet_wrap(~hour, scales = "free") + scale_y_reordered() +
-      ggtitle("Count of messages from authors over time") +
-      theme(plot.title = element_text(hjust = 0, face = "bold"))
+      facet_wrap(~hour, scales = "free") + scale_y_reordered()
   })
   
   output$AuthorMessages <- DT::renderDataTable({
