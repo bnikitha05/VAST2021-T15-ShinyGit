@@ -9,7 +9,8 @@ library(tmap)
 library(wordcloud2)
 library(shinydashboard)
 
-packages = c('tidyverse','tm','wordcloud','tidytext','ggwordcloud','udpipe','textplot','widyr','RColorBrewer')
+packages = c('tidyverse','tm','wordcloud','tidytext','ggwordcloud','udpipe','textplot','widyr','RColorBrewer','tidyr',
+             'lubridate','tidygraph','ggraph')
 for(p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)
@@ -63,6 +64,39 @@ usenet_words <- articles %>%
 words_by_newsgroup <- usenet_words %>%
   count(newsgroup, word, sort = TRUE) %>%
   ungroup()
+
+newsgroup_cors <- words_by_newsgroup %>%
+  pairwise_cor(newsgroup, 
+               word, 
+               n, 
+               sort = TRUE)
+
+#Newtwork Graph
+
+edges <- read.csv("data/cleanEmail.csv")
+nodes<- read.csv("data/cleanEmployee.csv")
+
+#official emails
+edges_official=edges %>% 
+  filter(MainSubject == "Work related") %>%
+  group_by(Source,Target,SentDate) %>%
+  summarise(Weight=n()) %>%
+  filter(Weight >1) %>%
+  ungroup()
+network_graphOfficial = tbl_graph(nodes=nodes, edges=edges_official,
+                                  directed=TRUE  )
+
+#unofficial emails
+edges_unofficial=edges %>%
+  filter(MainSubject == "Non-work related") %>%
+  group_by(Source,Target,SentDate) %>%
+  summarise(Weight=n()) %>%
+  filter(Weight >1) %>%
+  ungroup()
+network_graphUnofficial = tbl_graph(nodes=nodes, edges=edges_unofficial,
+                                    directed=TRUE  )
+##dropdowns
+graphNode=c('CitizenshipCountry','CurrentEmploymentType','Gender','CitizenshipCountry','CurrentEmploymentTitle')
 
 # MC3 Prep
 
@@ -274,10 +308,25 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                                              )),h5("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,    
                                        ),
                                        conditionalPanel(condition="input.tabselected==3",
-                                                        selectInput(inputId="cluster","Cluster",choices=clusters,selected=1)               
+                                                        selectInput(inputId="cluster","Cluster",choices=clusters,selected=1),
+                                                        hr(),
+                                                        numericInput("nval1", "Top most occur word pairs",
+                                                                     value = 15, min = 1
+                                                        ),
+                                                        hr(),
+                                                        checkboxInput("viewbigram", "View Bigram Plot for Selected Cluster", FALSE),
+                                                        conditionalPanel(
+                                                          condition = "input.viewbigram == 1",
+                                                          hr(),
+                                                          numericInput("nval2", "Count of Phrases",
+                                                                       value = 10, min = 1
+                                                          )
+                                                        )
+                                                        
+                                                        
                                        ),
                                        conditionalPanel(condition="input.tabselected==4",
-                                                        sliderInput(inputId="value","Correlation Range",min=0,max=1,value=c(0.9,1.0),sep="",animate=FALSE),
+                                                        sliderInput(inputId="value","Correlation Range",min=round(min(newsgroup_cors$correlation),2),max=round(max(newsgroup_cors$correlation),2),value=c(0.84,0.92),sep="",animate=FALSE),
                                                         checkboxInput("option", "Compare Newsgroups with WordClound", FALSE),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
@@ -308,14 +357,37 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                          tabsetPanel(type="tabs",id="tabselected",selected=1,
                                            tabPanel("Comparision Cloud",icon = icon("fas fa-cloud"), plotOutput("cloud",  width = "100%"),value=1),
                                            tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),fluidRow((forceNetworkOutput("textnet"))),value=2),
-                                           tabPanel("Text Plot",icon = icon("fas fa-cloud"), plotOutput("textplot",  width = "100%"),value=3),
-                                           tabPanel("Correlation Graph",icon = icon("fas fa-cloud"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
+                                           tabPanel("Text Plot",icon = icon("fas fa-align-left"), fluidRow(plotOutput("textplot",  width = "100%")),fluidRow(textOutput("text1"),plotOutput("bigram",  width = "100%")),value=3),
+                                           tabPanel("Correlation Graph",icon = icon("fas fa-stream"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
                                          ) 
                                        )
-                                     ),
+                                     )
                             ),
-                            tabPanel("Network Graph"
-                                     
+                            tabPanel("Network Graph",
+                                     titlePanel(HTML("<center>Network Graph of Employees of GasTech</center>")),
+                                     sidebarLayout(
+                                       sidebarPanel(
+                                         conditionalPanel(condition="input.tabselected2==5",h4("Note: Please give it some time to load."),
+                                                          radioButtons(
+                                                            inputId = "workType",
+                                                            label = "Select the type of Email Relationship",
+                                                            choices = c(
+                                                              "Work Related" = "work",
+                                                              "Non-Work Related" = "nonwork"
+                                                            )
+                                                          ),
+                                                          hr(),
+                                                          selectInput(inputId="color","Nodes Type",choices=graphNode,selected='CurrentEmploymentType')
+                                                          )
+                                      
+                                       ),
+                                       
+                                       mainPanel(
+                                         tabsetPanel(type="tabs",id="tabselected2",selected=5,
+                                                     tabPanel("Relationships",icon = icon("fas fa-handshake"), plotOutput("relation",  width = "100%"),value=5)
+                                                   ) 
+                                       )
+                                     )  
                             )
                  ),
                  
@@ -453,6 +525,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
 server <- function(input, output) {
   ##history of Gastech server
   
+  ####Text Analysis
   ###1)comaprision cloud
   data_source <- reactive({
     subdata <- subset(articles,articles$newsgroup %in% input$newsgroup)
@@ -529,13 +602,58 @@ server <- function(input, output) {
   output$textplot <- renderPlot({
     x <- subset(usenet_words, cluster == input$cluster)
     x <- cooccurrence(x, group = "id", term = "word")
-    textplot_cooccurrence(x, top_n = 15, subtitle = paste0("showing Cluster ",input$cluster))
+    textplot_cooccurrence(x, top_n = input$nval1, subtitle = paste0("showing Cluster ",input$cluster))
+  }
+  )
+  ###birgam
+  output$bigram <- renderPlot({
+    if(input$viewbigram==1){
+    output$text1 <- renderText("BIGRAM PLOT:")
+    sub_articles <- subset(articles,articles$cluster %in% input$cluster)
+    bigrams <- sub_articles %>%
+      unnest_tokens(bigram, 
+                    Content, 
+                    token = "ngrams", 
+                    n = 2)
+    bigrams_separated <- bigrams %>%
+      filter(bigram != 'NA') %>%
+      separate(bigram, c("word1", "word2"), 
+               sep = " ")
+    bigrams_filtered <- bigrams_separated %>%
+      filter(!word1 %in% stop_words$word) %>%
+      filter(!word2 %in% stop_words$word)
+    bigram_counts <- bigrams_filtered %>% 
+      count(word1, word2, sort = TRUE)
+    bigram_graph <- bigram_counts %>%
+      filter(n > input$nval2) %>%
+      graph_from_data_frame()
+    
+    set.seed(123)
+    a <- grid::arrow(type = "closed", 
+                     length = unit(.15,
+                                   "inches"))
+    ggraph(bigram_graph, 
+           layout = "fr") +
+      geom_edge_link(aes(edge_alpha = n), 
+                     show.legend = FALSE,
+                     arrow = a, 
+                     end_cap = circle(.07,
+                                      'inches')) +
+      geom_node_point(color = "lightblue", 
+                      size = 5) +
+      geom_node_text(aes(label = name), 
+                     vjust = 1, 
+                     hjust = 1) +
+      theme_void()
+    }else{
+      output$text1 <- renderText("")
+    }
   }
   )
   
-  
   ###4) correlation
-  create_correlationplot <- function(newsgroup_cors, value ) {
+  output$correlation <- renderPlot({
+
     set.seed(123)
     newsgroup_cors %>%
       filter(correlation >= input$value[1] & correlation <= input$value[2]) %>%
@@ -550,17 +668,6 @@ server <- function(input, output) {
                      repel = TRUE) +
       theme_void()
   }
-  
-  output$correlation <- renderPlot({
-    newsgroup_cors <- words_by_newsgroup %>%
-      pairwise_cor(newsgroup, 
-                   word, 
-                   n, 
-                   sort = TRUE)
-    create_correlationplot(newsgroup_cors,
-                     value = input$value
-    )
-  }
   )
   ###5) wordclouds
   output$wordcloudd1 <- renderWordcloud2({
@@ -574,7 +681,7 @@ server <- function(input, output) {
       corpus <- tm_map(corpus, removeNumbers)
       corpus <- tm_map(corpus, removeWords, stopwords(tolower("English")))
       tdm <- as.matrix(TermDocumentMatrix(corpus))
-      data1 <- sort(rowSums(tdm), decreasing = TRUE)
+      data1 <- sort(rowSums(tdm), decreasing =TRUE)
       data1 <- data.frame(word = names(data1), freq = as.numeric(data1))
     }
     # Make sure a proper num_words is provided
@@ -588,7 +695,7 @@ server <- function(input, output) {
   )
   
   output$wordcloudd2 <- renderWordcloud2({
-    if(input$option==1 & length(input$option1>0)){
+    if(input$option==1){
     subdata2=articles %>% filter(newsgroup %in% input$option2)
     data2 <- paste(subdata2$Content)
     if (is.character(data2)) {
@@ -609,6 +716,41 @@ server <- function(input, output) {
     }
   }
   )
+  
+  
+  ####Network Graph
+  
+
+  ###Email Work type Related
+  output$relation <- renderPlot({
+    if (input$workType == "work") {
+      print(input$color)
+      set.seed(123)
+      g <- ggraph(network_graphOfficial, 
+                  layout = "nicely") + 
+        geom_edge_link(aes(width=Weight), 
+                       alpha=0.2) +
+        scale_edge_width(range = c(0.1, 5)) +
+        geom_node_point(aes(colour = input$color, 
+                            size = 3))
+      g + theme_graph()
+    }else{
+      print(input$color)
+      set.seed(123)
+      g <- ggraph(network_graphUnofficial, 
+                  layout = "nicely") +
+        geom_edge_link(aes(width=Weight), 
+                       alpha=0.2) +
+        scale_edge_width(range = c(0.1, 5)) +
+        geom_node_point(aes(colour = input$color), 
+                        size = 3)
+      g + theme_graph()
+    }
+  }
+  )
+  
+  
+  
   
   
   
