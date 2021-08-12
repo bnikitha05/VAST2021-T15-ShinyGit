@@ -1,31 +1,36 @@
+#read files
+library(tidyverse)
+#Shiny related packages
 library(shiny)
 library(shinythemes)
-library(clock)
-library(DT)
-library(plotly)
-library(ggwordcloud)
-library(sf)
-library(tmap)
-library(wordcloud2)
 library(shinydashboard)
-
-
-library(lubridate)
-library(tidygraph)
-library(ggraph)
+#word cloud
+library(wordcloud2)
+library(ggwordcloud)
 library(wordcloud)
 library(tm)
+library(RColorBrewer)
+#time
+library(clock)
+library(lubridate)
+#datatable
+library(DT)
+#plotting
+library(plotly)
+library(tidygraph)
+library(ggraph)
+#text processing packages
+library(tidytext)
+library(textdata)
+library(tidyr)
+#packages required for Text Plot
 library(udpipe)
 library(textplot)
+#correlation
 library(widyr)
-library(RColorBrewer)
-library(textdata)
-library(tidytext)
-library(tidyverse)
-
+#packages required for Text Net 
 library(devtools)
 install_github("cbail/textnets")
-
 library(textnets)
 library(dplyr)
 library(Matrix)
@@ -35,11 +40,11 @@ library(reshape2)
 library(igraph)
 library(ggraph)
 library(networkD3)
-
-
+#MC3
+library(sf)
+library(tmap)
 
 # MC1 Data Processing
-
 #Read data from Excel
 articles=read_csv("data/cleanArticles.csv")
 
@@ -81,7 +86,7 @@ newsgroup_cors <- words_by_newsgroup %>%
                sort = TRUE)
 
 #Newtwork Graph
-
+#read files
 edges <- read.csv("data/cleanEmail.csv")
 nodes<- read.csv("data/cleanEmployee.csv")
 
@@ -104,11 +109,13 @@ edges_unofficial=edges %>%
   ungroup()
 network_graphUnofficial = tbl_graph(nodes=nodes, edges=edges_unofficial,
                                     directed=TRUE  )
+
+
 ##dropdowns
 graphNode=c('CitizenshipCountry','CurrentEmploymentType','Gender','CitizenshipCountry','CurrentEmploymentTitle')
 
-# MC3 Prep
 
+# MC3 Prep
 df_1 = read_csv("data/csv-1700-1830.csv")
 df_2 = read_csv("data/csv-1831-2000.csv")
 df_3 = read_csv("data/csv-2001-2131.csv")
@@ -387,18 +394,25 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                             label = "Select the type of Email Relationship",
                                                             choices = c(
                                                               "Work Related" = "work",
-                                                              "Non-Work Related" = "nonwork"
+                                                              "Non-Work Related" = "nonwork",
+                                                              "All" = "all"
                                                             )
                                                           ),
                                                           hr(),
                                                           selectInput(inputId="color","Nodes Type",choices=graphNode,selected='CurrentEmploymentType')
-                                                          )
+                                                          ),
+                                         conditionalPanel(condition="input.tabselected2==6",
+                                                          checkboxGroupInput("variable", "Variables to show:",
+                                                                             c("Show 3D Visualization" = 1
+                                                                             )),h5("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,
+                                         )
                                       
                                        ),
                                        
                                        mainPanel(
                                          tabsetPanel(type="tabs",id="tabselected2",selected=5,
-                                                     tabPanel("Relationships",icon = icon("fas fa-handshake"), plotOutput("relation",  width = "100%"),value=5)
+                                                     tabPanel("Relationships",icon = icon("fas fa-handshake"), plotOutput("relation",  width = "100%"),value=5),
+                                                     tabPanel("Emails Flow",icon = icon("fas fa-envelope-square"), plotOutput("emails",  width = "100%"),value=6)
                                                    ) 
                                        )
                                      )  
@@ -769,25 +783,23 @@ server <- function(input, output) {
   ###Email Work type Related
   output$relation <- renderPlot({
     if (input$workType == "work") {
-      print(input$color)
       set.seed(123)
       g <- ggraph(network_graphOfficial, 
                   layout = "nicely") + 
         geom_edge_link(aes(width=Weight), 
                        alpha=0.2) +
         scale_edge_width(range = c(0.1, 5)) +
-        geom_node_point(aes(colour = input$color, 
-                            size = 3))
+        geom_node_point(aes(colour = as.factor(nodes[,input$color])), 
+                            size = 3)
       g + theme_graph()
-    }else{
-      print(input$color)
+    }else {
       set.seed(123)
       g <- ggraph(network_graphUnofficial, 
                   layout = "nicely") +
         geom_edge_link(aes(width=Weight), 
                        alpha=0.2) +
         scale_edge_width(range = c(0.1, 5)) +
-        geom_node_point(aes(colour = input$color), 
+        geom_node_point(aes(colour = as.factor(nodes[,input$color])), 
                         size = 3)
       g + theme_graph()
     }
