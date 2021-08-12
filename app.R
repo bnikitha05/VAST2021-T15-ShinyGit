@@ -111,8 +111,11 @@ network_graphUnofficial = tbl_graph(nodes=nodes, edges=edges_unofficial,
 
 
 ##dropdowns
-graphNode=c('CitizenshipCountry','CurrentEmploymentType','Gender','CitizenshipCountry','CurrentEmploymentTitle')
-
+graphNode=c('CitizenshipCountry','CurrentEmploymentType','Gender','CurrentEmploymentTitle')
+dates=unique(edges$SentDate)
+names=nodes$FullName
+names=names[names != "Ruscella Mies Haber" & names != "Sten Sanjorge Jr"]
+names <- sort(names)
 
 # MC3 Prep
 df_1 = read_csv("data/csv-1700-1830.csv")
@@ -393,17 +396,34 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                             label = "Select the type of Email Relationship",
                                                             choices = c(
                                                               "Work Related" = "work",
-                                                              "Non-Work Related" = "nonwork",
-                                                              "All" = "all"
+                                                              "Non-Work Related" = "nonwork"
                                                             )
                                                           ),
                                                           hr(),
-                                                          selectInput(inputId="color","Nodes Type",choices=graphNode,selected='CurrentEmploymentType')
+                                                          selectInput(inputId="color","Nodes Type",choices=graphNode,selected='CitizenshipCountry')
                                                           ),
                                          conditionalPanel(condition="input.tabselected2==6",
-                                                          checkboxGroupInput("variable", "Variables to show:",
-                                                                             c("Show 3D Visualization" = 1
-                                                                             )),h5("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,
+                                                          radioButtons(
+                                                            inputId = "sent",
+                                                            label = "Select the type of Email Relationship",
+                                                            choices = c(
+                                                              "Sent Day" = "sentday",
+                                                              "Weekday" = "weekday"
+                                                            )
+                                                          ),
+                                                          hr(),
+                                                          checkboxInput("setdate", "Narrow down on Date", FALSE),
+                                                          conditionalPanel(
+                                                            condition = "input.setdate == 1",
+                                                          hr(),
+                                                          selectInput(inputId="date","Select Date",choices=dates,selected='2014-01-06'),
+                                                          selectInput(inputId="color1","Nodes Type",choices=graphNode,selected='CurrentEmploymentType'),
+                                                          checkboxInput("shownames", "Show Names of employees", FALSE)
+                                                          )
+                                         ),
+                                         conditionalPanel(condition="input.tabselected2==7",
+                                                          selectInput(inputId="name","Select Employee",choices=names,selected='Anda Ribera'),
+                                                          selectInput(inputId="color2","Nodes Type",choices=graphNode,selected='CurrentEmploymentType')
                                          )
                                       
                                        ),
@@ -411,7 +431,8 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                        mainPanel(
                                          tabsetPanel(type="tabs",id="tabselected2",selected=5,
                                                      tabPanel("Relationships",icon = icon("fas fa-handshake"), plotOutput("relation",  width = "100%"),value=5),
-                                                     tabPanel("Emails Flow",icon = icon("fas fa-envelope-square"), plotOutput("emails",  width = "100%"),value=6)
+                                                     tabPanel("Flow of Emails",icon = icon("fas fa-envelope"), fluidRow(plotOutput("emails",  width = "100%")),fluidRow(plotOutput("singleday",  width = "100%")),value=6),
+                                                     tabPanel("Target Employee",icon = icon("fas fa-users"), fluidRow(plotOutput("person",  width = "100%")),value=7)
                                                    ) 
                                        )
                                      )  
@@ -809,10 +830,133 @@ server <- function(input, output) {
   }
   )
   
+  ###all emails
+  output$emails <- renderPlot({
+    if(input$sent == "sentday"){
+      edges_aggregated=edges %>% 
+        group_by(Source,Target,SentDate) %>%
+        summarise(Weight=n()) %>%
+        filter(Weight >1) %>%
+        ungroup()
+      network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
+                                directed=TRUE  )
+      set.seed(123)
+      g <- ggraph(network_graph, 
+                  layout = "nicely") + 
+        geom_edge_link(aes(width=Weight), 
+                       alpha=0.2) +
+        scale_edge_width(range = c(0.1, 5)) +
+        geom_node_point(aes(colour = CurrentEmploymentType), 
+                        size = 2)
+      g + facet_edges(~SentDate)
+    }else{
+      edges$Weekday = wday(edges$SentDate,
+                                   label = TRUE,
+                                   abbr = FALSE)
+      edges_aggregated=edges %>% 
+        group_by(Source,Target,Weekday) %>%
+        summarise(Weight=n()) %>%
+        filter(Weight >1) %>%
+        ungroup()
+      network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
+                                directed=TRUE  )
+      set.seed(123)
+      g <- ggraph(network_graph, 
+                  layout = "nicely") + 
+        geom_edge_link(aes(width=Weight), 
+                       alpha=0.2) +
+        scale_edge_width(range = c(0.1, 5)) +
+        geom_node_point(aes(colour = CurrentEmploymentType), 
+                        size = 2)
+      g + facet_edges(~Weekday)
+    }
+  }
+  )
   
   
+  output$singleday <- renderPlot({
+    if(input$setdate==1){
+      if(input$shownames==0){
+      edges_aggregated=edges%>%
+        filter(SentDate == input$date) %>% 
+        group_by(Source,Target,SentDate) %>%
+        summarise(Weight=n()) %>%
+        filter(Weight >1) %>%
+        ungroup()
+      network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
+                                directed=TRUE  )
+      set.seed(123)
+      g <- ggraph(network_graph, 
+                  layout = "nicely") + 
+        geom_edge_link(aes(width=Weight), 
+                       alpha=0.2) +
+        scale_edge_width(range = c(0.1, 5)) +
+        geom_node_point(aes(colour = as.factor(nodes[,input$color1]),
+                            size = 2))
+      g + theme_graph()
+      }else{
+        edges_aggregated=edges%>%
+          filter(SentDate == input$date) %>% 
+          group_by(Source,Target,SentDate) %>%
+          summarise(Weight=n()) %>%
+          filter(Weight >1) %>%
+          ungroup()
+        network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
+                                  directed=TRUE  )
+        set.seed(123)
+        g <- ggraph(network_graph, 
+                    layout = "nicely") + 
+          geom_edge_link(aes(width=Weight), 
+                         alpha=0.2) +
+          scale_edge_width(range = c(0.1, 5)) +
+          geom_node_point(aes(colour = as.factor(nodes[,input$color1]),
+                              size = 2))+
+          geom_node_text(aes(label=FullName))
+        g + theme_graph()
+      }
+    }
+  }
+  )
   
-  
+  ###employee graph
+  output$person <- renderPlot({
+   sub=edges %>% filter(Source.Label == input$name)
+   unofficial=sub %>% 
+     group_by(Source,Target,SentDate) %>%
+     summarise(Weight=n()) %>%
+     filter(Weight >1) %>%
+     ungroup()
+   ids=unofficial$Source
+   ids=append(ids,unofficial$Target)
+   ids=unique(ids)
+   
+   #Create sub node consisting of ids present in unofficial
+   sub_nodes=nodes %>% filter(id %in% ids)
+   
+   #create new column called new_id
+   sub_nodes$new_id=1:nrow(sub_nodes)
+   
+   #re edit the Source and Target ids
+   unofficial$Source=sub_nodes$new_id[match(unofficial$Source,sub_nodes$id)]
+   unofficial$Target=sub_nodes$new_id[match(unofficial$Target,sub_nodes$id)]
+   
+   #remove the old id column and rename the new_id column
+   sub_nodes=sub_nodes[,!(names(sub_nodes) %in% c("id"))]
+   names(sub_nodes)[names(sub_nodes) == 'new_id'] <- 'id'
+   graphUnofficial = tbl_graph(nodes=sub_nodes, edges=unofficial)
+   set.seed(123)
+   g <- ggraph(graphUnofficial, 
+               layout = "nicely") + 
+     geom_edge_link(aes(width=Weight), 
+                    alpha=0.2) +
+     scale_edge_width(range = c(0.1, 5)) +
+     geom_node_point(aes(colour = as.factor(sub_nodes[,input$color2])), 
+                         size = 2)+
+     geom_node_text(aes(label=FullName))
+   
+   g + theme_graph()#+ facet_edges(~SentDate) #
+  }
+  )
   
   
   
