@@ -9,53 +9,33 @@ library(tmap)
 library(wordcloud2)
 library(shinydashboard)
 
-<<<<<<< HEAD
-packages = c('tidyverse','tm','wordcloud','tidytext','ggwordcloud','udpipe','textplot','widyr','RColorBrewer','tidyr',
-             'lubridate','tidygraph','ggraph')
-for(p in packages){
-  if(!require(p, character.only = T)){
-    install.packages(p)
-  }
-  library(p, character.only = T)
-}
 
-=======
+library(lubridate)
+library(tidygraph)
+library(ggraph)
 library(wordcloud)
 library(tm)
 library(udpipe)
 library(textplot)
 library(widyr)
 library(RColorBrewer)
-library(textnets)
 library(textdata)
+library(tidytext)
+library(tidyverse)
+
+library(devtools)
+install_github("cbail/textnets")
+
+library(textnets)
+library(dplyr)
 library(Matrix)
 library(SnowballC)
+library(stringr)
 library(reshape2)
 library(igraph)
 library(ggraph)
 library(networkD3)
->>>>>>> 73ecf7d55d5bece3446e6a0777a514f58ea838f7
-library(devtools)
-library(tidytext)
-library(tidyverse)
 
-# packages = c('tidyverse','tm','wordcloud','tidytext','ggwordcloud','udpipe','textplot','widyr','RColorBrewer')
-# for(p in packages){
-#   if(!require(p, character.only = T)){
-#     install.packages(p)
-#   }
-#   library(p, character.only = T)
-# }
-
-# library(devtools)
-# install_github("cbail/textnets")
-# packages = c('textnets','dplyr','Matrix','stringr','SnowballC','reshape2','igraph','ggraph','networkD3')
-# for(p in packages){
-#   if(!require(p, character.only = T)){
-#     install.packages(p)
-#   }
-#   library(p, character.only = T)
-# }
 
 
 # MC1 Data Processing
@@ -342,7 +322,6 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                                              )),h5("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,
                                        ),
                                        conditionalPanel(condition="input.tabselected==3",
-<<<<<<< HEAD
                                                         selectInput(inputId="cluster","Cluster",choices=clusters,selected=1),
                                                         hr(),
                                                         numericInput("nval1", "Top most occur word pairs",
@@ -358,10 +337,6 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                           )
                                                         )
                                                         
-                                                        
-=======
-                                                        selectInput(inputId="cluster","Cluster",choices=clusters,selected=1)
->>>>>>> 73ecf7d55d5bece3446e6a0777a514f58ea838f7
                                        ),
                                        conditionalPanel(condition="input.tabselected==4",
                                                         sliderInput(inputId="value","Correlation Range",min=round(min(newsgroup_cors$correlation),2),max=round(max(newsgroup_cors$correlation),2),value=c(0.84,0.92),sep="",animate=FALSE),
@@ -395,24 +370,18 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                          tabsetPanel(type="tabs",id="tabselected",selected=1,
                                            tabPanel("Comparision Cloud",icon = icon("fas fa-cloud"), plotOutput("cloud",  width = "100%"),value=1),
                                            tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),fluidRow((forceNetworkOutput("textnet"))),value=2),
-<<<<<<< HEAD
                                            tabPanel("Text Plot",icon = icon("fas fa-align-left"), fluidRow(plotOutput("textplot",  width = "100%")),fluidRow(textOutput("text1"),plotOutput("bigram",  width = "100%")),value=3),
                                            tabPanel("Correlation Graph",icon = icon("fas fa-stream"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
                                          ) 
-=======
-                                           tabPanel("Text Plot",icon = icon("fas fa-cloud"), plotOutput("textplot",  width = "100%"),value=3),
-                                           tabPanel("Correlation Graph",icon = icon("fas fa-cloud"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
-                                         )
->>>>>>> 73ecf7d55d5bece3446e6a0777a514f58ea838f7
+
                                        )
                                      )
                             ),
-<<<<<<< HEAD
                             tabPanel("Network Graph",
                                      titlePanel(HTML("<center>Network Graph of Employees of GasTech</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
-                                         conditionalPanel(condition="input.tabselected2==5",h4("Note: Please give it some time to load."),
+                                         conditionalPanel(condition="input.tabselected2==5",h5("Note: Please give it some time to load."),
                                                           radioButtons(
                                                             inputId = "workType",
                                                             label = "Select the type of Email Relationship",
@@ -433,11 +402,8 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                    ) 
                                        )
                                      )  
-=======
-                            tabPanel("Network Graph"
 
->>>>>>> 73ecf7d55d5bece3446e6a0777a514f58ea838f7
-                            )
+                 )
                  ),
                  
 
