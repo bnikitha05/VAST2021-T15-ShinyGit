@@ -474,11 +474,10 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
 
                  )
                  ),
-                 
 
                  navbarMenu("Message Stream Exploration",
                             tabPanel("Author Spam",
-                                     titlePanel("Exploring Authors for Spam"),
+                                     titlePanel(HTML("<center>Exploring Authors for Spam</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                          "Showing authors with the most messages
@@ -487,17 +486,17 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                          br(),
                                          selectInput(inputId = "author_chosen",
                                                      label = "Choose author to display messages
-                                                     for data table on the right: ",
+                                                     in the data table below: ",
                                                      choices = author,
                                                      selected = "KronosQuoth")
-                                       ),
+                                       ,width="40%"),
                                        mainPanel(
                                          DT::dataTableOutput(outputId = "AuthorMessages")
-                                       )
+                                       ,width="60%")
                                      )
                             ),
                             tabPanel("Word Cloud",
-                                     titlePanel("Exploring Key Topics - Wordcloud"),
+                                     titlePanel(HTML("<center>Exploring Key Topics - Wordcloud</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                            sliderInput(inputId = "min_wordcount",
@@ -517,7 +516,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                      )
                             ),
                             tabPanel("TF-IDF Keywords",
-                                     titlePanel("Exploring Key Topics - Keywords via TF-IDF"),
+                                     titlePanel(HTML("<center>Exploring Key Topics - Keywords via TF-IDF</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                            radioButtons(inputId = "tfidf_type",
@@ -544,7 +543,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                  ),
                  navbarMenu("Risk Level Timeline",
                             tabPanel("By Call Centre Reports",
-                                     titlePanel("Investigating Call Centre reports over time"),
+                                     titlePanel(HTML("<center>Investigating Call Centre reports over time</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                          selectInput(inputId = "time_int1",
@@ -574,7 +573,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                      )
                             ),
                             tabPanel("By Microblog Messages",
-                                     titlePanel("Investigating Microblog messages over time"),
+                                     titlePanel(HTML("<center>Investigating Microblog messages over time</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                          selectInput(inputId = "time_int2",
@@ -602,7 +601,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                             )
                  ),
                  tabPanel("Message Stream Geomap",
-                          titlePanel("Geomap of messages with geo-located data"),
+                          titlePanel(HTML("<center>Geomap of messages with geo-located data</center>")),
                           sidebarLayout(
                             sidebarPanel(
                               selectInput(inputId = "data_type",
@@ -1017,6 +1016,7 @@ server <- function(input, output) {
       top_n(10,n) %>%
       mutate(author = reorder_within(author,n,hour)) %>%
       ggplot(aes(x = n, y = author, fill = hour)) + geom_col(show.legend = F) +
+      labs(x = "Number of Tweets",y="Authors")+
       facet_wrap(~hour, scales = "free") + scale_y_reordered()
   })
   
@@ -1040,7 +1040,8 @@ server <- function(input, output) {
               count(word, sort = T) %>%
               filter(n > input$min_wordcount) %>%
               ggplot(aes(label = word, size = n)) + geom_text_wordcloud(rm_outside = T) +
-              scale_size_area(max_size = input$wc_size)
+              scale_size_area(max_size = input$wc_size)+
+          theme_minimal()
       }else{
           df_tidyclean %>%
               count(hour, word, sort = T) %>%
@@ -1098,7 +1099,9 @@ server <- function(input, output) {
       group_by(hour_15min) %>%
       summarise(count = n(), combined_text = paste0(message, collapse = " | ")) %>%
       ungroup %>%
-      ggplot(aes(x = hour_15min, y = count)) + geom_col()
+      ggplot(aes(x = hour_15min, y = count))+
+      labs(x = "Hours",y="Number of Tweets") +
+      geom_col()
   })
   
   output$CCDataTable <- renderDataTable({
