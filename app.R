@@ -69,7 +69,7 @@ text_communities <- TextCommunities(news_text_network)
 articles$cluster=text_communities$modularity_class[match(articles$newsgroup,text_communities$
                                                            group)]
 
-#Preparing data for wordcloude and correlation graphs
+#Preparing data for wordcloud and correlation graphs
 usenet_words <- articles %>%
   unnest_tokens(word, Content) %>%
   filter(str_detect(word, "[a-z']$"),
@@ -301,54 +301,88 @@ df_mbdata_gps_point_sentiment <- df_mbdata_gps_point %>%
 
 ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                  tabPanel("Introduction",
-                          titlePanel("Introduction to Group 15's Shiny App"),
-                          fluidRow(
-                            column(8,"This Shiny App is built by Team 15 of SMU AY2020-2021 Sem 3
-                                       ISSS608. The project tackles the VAST2021 Challenge, focusing
-                                       on Mini-Challenges 1 and 3.")
-                          )
+                          titlePanel(HTML("<center>Welcome to the Shiny App of Group 15</center>")),
+                          hr(),
+                          hr(),
+                          h4("This Shiny App tackles the VAST2021 Challenge and consists of two parts."),
+                          br(),
+                          HTML("<h4><b>Part 1- History of GastTech Company</b></h4>"),
+                          HTML("<h4>This part provides information of the history the GasTech company had and is further divided into 'Text Analysis' and 'Network Graph'<h4>"),
+                          HTML("<ul>
+                                 <li><h5>The 'Text Analysis' provides detailed visualization across four different plots of the news paper articles over the years showcasing the type of reputation the GasTech company has had.</h5>
+                                 <ul>
+                                 <li><h5>Comparision Cloud</h5></li>
+                                 <li><h5>Clustering</h5></li>
+                                 <li><h5>Word Co-occurrence</h5></li>
+                                 <li><h5>Correlation</h5></li>
+                                 </ul>
+                                 </li>
+                                 <li><h5>'Network Graph' on the other hand provides insights of the employess within GasTech company</h5>
+                                 <ul>
+                                 <li><h5>Relationship of Employees</h5></li>
+                                 <li><h5>Flow of Emails</h5></li>
+                                 <li><h5>Target Employee</h5></li>
+                                 </ul>
+                                 </li>
+                                 </ul>"),
+                          br(),
+                          HTML("<h4><b>Part 2- On the Day of Incident</b></h4>"),
+                          HTML("<h4>User can interact with the data in this part to gain insights on how events unfolded on the day of the incident.</h4>")
+                            
+                          
+                          
                  ),
-                 navbarMenu("History of GASTech",
-                            tabPanel("Text Analysis",
+                 navbarMenu("History of GasTech Company",
+                            tabPanel("Text Analysis",icon = icon("fas fa-chart-bar"),
                                      titlePanel(HTML("<center>Text Analysis of News Articles</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
-                                         conditionalPanel(condition="input.tabselected==1",h4("test"),
-                                         radioButtons(
+                                         conditionalPanel(condition="input.tabselected==1",h5("Select the type of 'Word Source' to compare the similarities or differences in context used across 'Newsgroups' selected."),
+                                        hr(),
+                                        radioButtons(
                                            inputId = "source",
-                                           label = "Word source",
+                                           label = "Word Source",
                                            choices = c(
-                                             "Content" = "content",
-                                             "Titles" = "title"
+                                             "Content of Articles" = "content",
+                                             "Titles of Articles" = "title"
                                            )
                                          ),
                                          hr(),
-                                         selectInput(inputId="newsgroup","Newsgroup",newsgroup, multiple = TRUE,selected=c("News Online Today", "The World","Centrum Sentinel")),
+                                         selectInput(inputId="newsgroup","Select newsgroups for comparision",newsgroup, multiple = TRUE,selected=c("World Journal","News Online Today","Everyday News","International Times",
+                                                                                                                                                   "The Continent","World Source")),
                                        ),
                                        conditionalPanel(condition="input.tabselected==2",
-                                                        checkboxGroupInput("variable", "Variables to show:",
-                                                                           c("Show 3D Visualization" = 1
-                                                                             )),h5("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,
-                                       ),
-                                       conditionalPanel(condition="input.tabselected==3",
-                                                        selectInput(inputId="cluster","Cluster",choices=clusters,selected=1),
+                                                        h5("Select the value for label degree to display only those labels having a minimum of that number of connections with other nodes."),
+                                                        sliderInput(inputId="degree","Label Degree Cut",min=1,max=10,value=1,sep="",animate=FALSE),
                                                         hr(),
-                                                        numericInput("nval1", "Top most occur word pairs",
+                                                        h5("Select any number of clusters to visualize the newsgroups segmented into their respective clusters based on their similarities."),
+                                                        selectInput(inputId="clusternum","Select cluster numbers",choices=clusters, multiple = TRUE,selected=c(1,2,5)),
+                                                        #hr(),
+                                                        #checkboxGroupInput("variable", "Select the checkbox to show 3D model:",
+                                                                          # c("Show 3D Visualization" = 1
+                                                                            # )),h6("Note: If the checkbox is selected, please scroll down to view the 3D visualization.") ,
+                                       ),
+                                       conditionalPanel(condition="input.tabselected==3",h5("From the cluster groups visualized in the previous tab, select any one cluster to identify the most frequently occurring word pairs within that cluster."),
+                                                        selectInput(inputId="cluster","Select cluster number",choices=clusters,selected=1),
+                                                        hr(),
+                                                        numericInput("nval1", "Number of pair words to display",
                                                                      value = 15, min = 1
                                                         ),
                                                         hr(),
+                                                        h5("Select the checkbox below to visualize which word starts and which ends by means of an arrow."),
                                                         checkboxInput("viewbigram", "View Bigram Plot for Selected Cluster", FALSE),
                                                         conditionalPanel(
                                                           condition = "input.viewbigram == 1",
                                                           hr(),
-                                                          numericInput("nval2", "Count of Phrases",
+                                                          numericInput("nval2", "Number of times phrases should occur",
                                                                        value = 10, min = 1
                                                           )
                                                         )
                                                         
                                        ),
                                        conditionalPanel(condition="input.tabselected==4",
-                                                        sliderInput(inputId="value","Correlation Range",min=round(min(newsgroup_cors$correlation),2),max=round(max(newsgroup_cors$correlation),2),value=c(0.84,0.92),sep="",animate=FALSE),
+                                                        sliderInput(inputId="value","Select correlation range",min=round(min(newsgroup_cors$correlation),2),max=round(max(newsgroup_cors$correlation),2),value=c(0.84,0.92),sep="",animate=FALSE),
+                                                        hr(),
                                                         checkboxInput("option", "Compare Newsgroups with WordClound", FALSE),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
@@ -358,7 +392,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
                                                           numericInput("num", "Maximum number of words",
-                                                                       value = 80, min = 5
+                                                                       value = 40, min = 5
                                                           )
                                                         ),
                                                         conditionalPanel(
@@ -369,7 +403,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                         conditionalPanel(
                                                           condition = "input.option == 1",
                                                           numericInput("num1", "Maximum number of words",
-                                                                       value = 80, min = 5
+                                                                       value = 40, min = 5
                                                           )
                                                         )
                                        )
@@ -377,20 +411,21 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
 
                                        mainPanel(
                                          tabsetPanel(type="tabs",id="tabselected",selected=1,
-                                           tabPanel("Comparision Cloud",icon = icon("fas fa-cloud"), plotOutput("cloud",  width = "100%"),value=1),
-                                           tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),fluidRow((forceNetworkOutput("textnet"))),value=2),
-                                           tabPanel("Text Plot",icon = icon("fas fa-align-left"), fluidRow(plotOutput("textplot",  width = "100%")),fluidRow(textOutput("text1"),plotOutput("bigram",  width = "100%")),value=3),
-                                           tabPanel("Correlation Graph",icon = icon("fas fa-stream"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
+                                                     #wordcloud2Output
+                                           tabPanel("Comparision Cloud of Articles",icon = icon("fas fa-cloud"), plotOutput("cloud",  width = "100%"),value=1),
+                                           #,fluidRow(textOutput("text2"),forceNetworkOutput("textnet"))
+                                           tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),value=2),
+                                           tabPanel("Word Co-occurrence",icon = icon("fas fa-spell-check"), fluidRow(plotOutput("textplot",  width = "100%")),fluidRow(textOutput("text1"),plotOutput("bigram",  width = "100%")),value=3),
+                                           tabPanel("Correlation of Newsgroups",icon = icon("fas fa-stream"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
                                          ) 
-
                                        )
                                      )
                             ),
-                            tabPanel("Network Graph",
-                                     titlePanel(HTML("<center>Network Graph of Employees of GasTech</center>")),
+                            tabPanel("Network Graph",icon = icon("fas fa-project-diagram"),
+                                     titlePanel(HTML("<center>Network Graph of GasTech Employees</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
-                                         conditionalPanel(condition="input.tabselected2==5",h5("Note: Please give it some time to load."),
+                                         conditionalPanel(condition="input.tabselected2==5",h6("Note: Please give it some time to load."),
                                                           radioButtons(
                                                             inputId = "workType",
                                                             label = "Select the type of Email Relationship",
@@ -640,42 +675,48 @@ server <- function(input, output) {
     tdm=TermDocumentMatrix(corpus)
     m=as.matrix(tdm)
     colnames(m)=newsgroup
-    comparison.cloud(m,max.words = 100,random.order=FALSE,colors=brewer.pal(max(5,ncol(m)),"Dark2") ,title.size=1,
+    par(mar = rep(0, 4))
+    comparison.cloud(m,max.words = 200,random.order=FALSE,colors=brewer.pal(max(5,ncol(m)),"Dark2") ,title.size=1,
                      title.colors=NULL, match.colors=FALSE,
                      title.bg.colors="grey90")
   }
-  
+  #renderPlot
+  #renderWordcloud2
   output$cloud <- renderPlot({
     create_wordcloud(data_source(),
                      newsgroup = input$newsgroup
                      
     )
-  }, height = 700, width = 800 
+  }#, height = 1000, width = 1000 
   )
   
   
   ###2) 3D Visualization
   output$textnet <- renderForceNetwork({
+    output$text2 <- renderText("")
     req(input$variable)
     if(input$variable==1){
-      VisTextNetD3(news_text_network, .30)}
+      output$text2 <- renderText("The 3D plot is interactive and any node can be dragged away for a better view")
+      VisTextNetD3(news_text_network, .30)
+    }
   }
   )
   
   output$tn <- renderPlot({
-    VisTextNet(news_text_network, .30, label_degree_cut=1)
+    VisTextNet(news_text_network, .30, label_degree_cut=input$degree)
   }
   )
 
   output$cluster <- renderPlot({
-    ggplot(text_communities %>% filter(modularity_class %in% c(1,2,3,4,5,6)), 
+    req(input$clusternum)
+    ggplot(text_communities %>% filter(modularity_class %in% input$clusternum), 
            aes(label=group, 
                color=modularity_class)) +
       geom_text_wordcloud(eccentricity = 1) +
       scale_size_area(max_size = 15) +
       theme_minimal() +  
       ggtitle("Segmentation of Newsgroups into Clusters")+
-      theme(plot.title = element_text(hjust = 0.5))+
+      theme(plot.title = element_text(hjust = 0.75))+
       facet_wrap(~modularity_class)
   }
   )
@@ -772,7 +813,8 @@ server <- function(input, output) {
       input$num <- 3
     }
     data1 <- head(data1, n = input$num)
-    wordcloud2(data1, backgroundColor = 'white')
+    par(mar = rep(0, 4))
+    wordcloud2(data1, backgroundColor = 'white',color=brewer.pal(8, "Dark2"))
     }
   }
   )
@@ -795,7 +837,8 @@ server <- function(input, output) {
       input$num1 <- 3
     }
     data2 <- head(data2, n = input$num1)
-    wordcloud2(data2, backgroundColor = 'white')
+    par(mar = rep(0, 4))
+    wordcloud2(data2, backgroundColor = 'white',color=brewer.pal(8, "Dark2"))
     }
   }
   )
