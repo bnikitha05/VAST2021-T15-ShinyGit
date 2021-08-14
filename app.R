@@ -311,9 +311,9 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                           hr(),
                           hr(),
                           HTML("<h4>This application features insights from the data consisting collection of artifacts and emails  related to the GAStech company in the country Kronos. This data was obtained from <b>VAST Challenge 2021</b>.</h4>"),
-                          h4("The analysis in the application is scoped to investigate how events have unfolded on the day of incident in Kronos and to provide insights on the reputation of the company since its establishment."),
-                          h4("The application is divided across various tabs and more information of each tab can be referred in <link to guide>. Go ahead and explore our application and become a detective!"),
-                          h4("For more information on this project, please refer to our <Group Project Website>.")
+                          HTML("<h4>The analysis in the application is scoped to investigate how events have unfolded on the day of incident in Kronos and to provide insights on the reputation of the company since its establishment.</h4>"),
+                          HTML("<h4>The application is divided across various tabs and more information of each tab can be referred in <a href=https://grp15-vast-project.netlify.app/userguide>User Guide</a>. Go ahead and explore our application and become a detective!</h4>"),
+                          HTML("<h4>For more information on this project, please refer to our <a href=https://grp15-vast-project.netlify.app/>Group Project Website</a>.</h4>")
                  ),
                  navbarMenu("History of GasTech Company",
                             tabPanel("Text Analysis",icon = icon("fas fa-chart-bar"),
