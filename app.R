@@ -859,7 +859,7 @@ server <- function(input, output) {
         scale_edge_width(range = c(0.1, 5)) +
         geom_node_point(aes(colour = Nodes_Identification), 
                             size = 3)
-      g + theme_graph()
+      g #+ theme_graph()
     }else {
       Nodes_Identification=as.factor(nodes[,input$color])
       set.seed(123)
@@ -870,7 +870,7 @@ server <- function(input, output) {
         scale_edge_width(range = c(0.1, 5)) +
         geom_node_point(aes(colour = Nodes_Identification), 
                         size = 3)
-      g + theme_graph()
+      g #+ theme_graph()
     }
   }
   )
