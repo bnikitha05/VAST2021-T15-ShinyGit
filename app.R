@@ -299,7 +299,7 @@ df_mbdata_gps_point_sentiment <- df_mbdata_gps_point %>%
 
 # UI
 
-ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
+ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("sandstone"),
                  tabPanel("Introduction",
                           titlePanel(HTML("<center>Welcome to the Shiny App of Group 15</center>")),
                           hr(),
@@ -414,7 +414,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                      #wordcloud2Output
                                            tabPanel("Comparision Cloud of Articles",icon = icon("fas fa-cloud"), plotOutput("cloud",  width = "100%"),value=1),
                                            #,fluidRow(textOutput("text2"),forceNetworkOutput("textnet"))
-                                           tabPanel("3D-Viz of Clustering",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),value=2),
+                                           tabPanel("Cluster Analysis",icon = icon("fas fa-cubes"), fluidRow(box(plotOutput("tn")), box(plotOutput("cluster"))),value=2),
                                            tabPanel("Word Co-occurrence",icon = icon("fas fa-spell-check"), fluidRow(plotOutput("textplot",  width = "100%")),fluidRow(textOutput("text1"),plotOutput("bigram",  width = "100%")),value=3),
                                            tabPanel("Correlation of Newsgroups",icon = icon("fas fa-stream"), fluidRow(plotOutput("correlation",  width = "100%")), fluidRow(box(wordcloud2Output("wordcloudd1")), box(wordcloud2Output("wordcloudd2"))),value=4)
                                          ) 
@@ -435,7 +435,7 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                             )
                                                           ),
                                                           hr(),
-                                                          selectInput(inputId="color","Nodes Type",choices=graphNode,selected='CitizenshipCountry')
+                                                          selectInput(inputId="color","Identify the nodes by:",choices=graphNode,selected='CitizenshipCountry')
                                                           ),
                                          conditionalPanel(condition="input.tabselected2==6",
                                                           radioButtons(
@@ -452,13 +452,13 @@ ui <- navbarPage("Group 15 Project", theme = shinytheme("sandstone"),
                                                             condition = "input.setdate == 1",
                                                           hr(),
                                                           selectInput(inputId="date","Select Date",choices=dates,selected='2014-01-06'),
-                                                          selectInput(inputId="color1","Nodes Type",choices=graphNode,selected='CurrentEmploymentType'),
+                                                          selectInput(inputId="color1","Identify the nodes by:",choices=graphNode,selected='CurrentEmploymentType'),
                                                           checkboxInput("shownames", "Show Names of employees", FALSE)
                                                           )
                                          ),
                                          conditionalPanel(condition="input.tabselected2==7",
                                                           selectInput(inputId="name","Select Employee",choices=names,selected='Anda Ribera'),
-                                                          selectInput(inputId="color2","Nodes Type",choices=graphNode,selected='CurrentEmploymentType')
+                                                          selectInput(inputId="color2","Identify the nodes by:",choices=graphNode,selected='CurrentEmploymentType')
                                          )
                                       
                                        ),
@@ -848,6 +848,7 @@ server <- function(input, output) {
 
   ###Email Work type Related
   output$relation <- renderPlot({
+    Nodes_Identification=as.factor(nodes[,input$color])
     if (input$workType == "work") {
       set.seed(123)
       g <- ggraph(network_graphOfficial, 
@@ -855,17 +856,18 @@ server <- function(input, output) {
         geom_edge_link(aes(width=Weight), 
                        alpha=0.2) +
         scale_edge_width(range = c(0.1, 5)) +
-        geom_node_point(aes(colour = as.factor(nodes[,input$color])), 
+        geom_node_point(aes(colour = Nodes_Identification), 
                             size = 3)
       g + theme_graph()
     }else {
+      Nodes_Identification=as.factor(nodes[,input$color])
       set.seed(123)
       g <- ggraph(network_graphUnofficial, 
                   layout = "nicely") +
         geom_edge_link(aes(width=Weight), 
                        alpha=0.2) +
         scale_edge_width(range = c(0.1, 5)) +
-        geom_node_point(aes(colour = as.factor(nodes[,input$color])), 
+        geom_node_point(aes(colour = Nodes_Identification), 
                         size = 3)
       g + theme_graph()
     }
@@ -927,13 +929,14 @@ server <- function(input, output) {
         ungroup()
       network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
                                 directed=TRUE  )
+      Nodes_Identification=as.factor(nodes[,input$color])
       set.seed(123)
       g <- ggraph(network_graph, 
                   layout = "nicely") + 
         geom_edge_link(aes(width=Weight), 
                        alpha=0.2) +
         scale_edge_width(range = c(0.1, 5)) +
-        geom_node_point(aes(colour = as.factor(nodes[,input$color1]),
+        geom_node_point(aes(colour =Nodes_Identification ,
                             size = 2))
       g + theme_graph()
       }else{
@@ -945,13 +948,14 @@ server <- function(input, output) {
           ungroup()
         network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
                                   directed=TRUE  )
+        Nodes_Identification=as.factor(nodes[,input$color])
         set.seed(123)
         g <- ggraph(network_graph, 
                     layout = "nicely") + 
           geom_edge_link(aes(width=Weight), 
                          alpha=0.2) +
           scale_edge_width(range = c(0.1, 5)) +
-          geom_node_point(aes(colour = as.factor(nodes[,input$color1]),
+          geom_node_point(aes(colour = Nodes_Identification,
                               size = 2))+
           geom_node_text(aes(label=FullName))
         g + theme_graph()
@@ -986,13 +990,14 @@ server <- function(input, output) {
    sub_nodes=sub_nodes[,!(names(sub_nodes) %in% c("id"))]
    names(sub_nodes)[names(sub_nodes) == 'new_id'] <- 'id'
    graphUnofficial = tbl_graph(nodes=sub_nodes, edges=unofficial)
+   Nodes_Identification=as.factor(sub_nodes[,input$color])
    set.seed(123)
    g <- ggraph(graphUnofficial, 
                layout = "nicely") + 
      geom_edge_link(aes(width=Weight), 
                     alpha=0.2) +
      scale_edge_width(range = c(0.1, 5)) +
-     geom_node_point(aes(colour = as.factor(sub_nodes[,input$color2])), 
+     geom_node_point(aes(colour = Nodes_Identification), 
                          size = 2)+
      geom_node_text(aes(label=FullName))
    
