@@ -576,7 +576,7 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                                             "30 Min" = 30),
                                                 selected = 1),
                                          checkboxInput(inputId = "show_bigram",
-                                                       label = "Show TF-IDF Bigram (from Q1)",
+                                                       label = "Show TF-IDF Bigram (from Exploration)",
                                                        value = T),
                                          "Note: AFINN and NRC are two different approaches to
                                          estimating sentiment level. AFINN assigns words with
@@ -603,7 +603,7 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                      )
                             )
                  ),
-                 tabPanel("Event Geomap",
+                 tabPanel("Message Stream Geomap",
                           titlePanel(HTML("<center>Map of Key Messages with Geolocation</center>")),
                           sidebarLayout(
                             sidebarPanel(
