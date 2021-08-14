@@ -308,8 +308,6 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                           h4("The analysis in the application is scoped to investigate how events have unfolded on the day of incident in Kronos and to provide insights on the reputation of the company since its establishment."),
                           h4("The application is divided across various tabs and more information of each tab can be referred in <link to guide>. Go ahead and explore our application and become a detective!"),
                           h4("For more information on this project, please refer to our <Group Project Website>.")
-                          
-                          
                  ),
                  navbarMenu("History of GasTech Company",
                             tabPanel("Text Analysis",icon = icon("fas fa-chart-bar"),
@@ -908,7 +906,7 @@ server <- function(input, output) {
         ungroup()
       network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
                                 directed=TRUE  )
-      Nodes_Identification=as.factor(nodes[,input$color])
+      Nodes_Identification=as.factor(nodes[,input$color1])
       set.seed(123)
       g <- ggraph(network_graph, 
                   layout = "nicely") + 
@@ -927,7 +925,7 @@ server <- function(input, output) {
           ungroup()
         network_graph = tbl_graph(nodes=nodes, edges=edges_aggregated,
                                   directed=TRUE  )
-        Nodes_Identification=as.factor(nodes[,input$color])
+        Nodes_Identification=as.factor(nodes[,input$color1])
         set.seed(123)
         g <- ggraph(network_graph, 
                     layout = "nicely") + 
@@ -969,7 +967,7 @@ server <- function(input, output) {
    sub_nodes=sub_nodes[,!(names(sub_nodes) %in% c("id"))]
    names(sub_nodes)[names(sub_nodes) == 'new_id'] <- 'id'
    graphUnofficial = tbl_graph(nodes=sub_nodes, edges=unofficial)
-   Nodes_Identification=as.factor(sub_nodes[,input$color])
+   Nodes_Identification=as.factor(sub_nodes[,input$color2])
    set.seed(123)
    g <- ggraph(graphUnofficial, 
                layout = "nicely") + 
