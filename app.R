@@ -939,7 +939,7 @@ server <- function(input, output) {
         scale_edge_width(range = c(0.1, 5)) +
         geom_node_point(aes(colour =Nodes_Identification ,
                             size = 2))
-      g + theme_graph()
+      g #+ theme_graph()
       }else{
         edges_aggregated=edges%>%
           filter(SentDate == input$date) %>% 
@@ -959,7 +959,7 @@ server <- function(input, output) {
           geom_node_point(aes(colour = Nodes_Identification,
                               size = 2))+
           geom_node_text(aes(label=FullName))
-        g + theme_graph()
+        g# + theme_graph()
       }
     }
   }
@@ -1002,7 +1002,7 @@ server <- function(input, output) {
                          size = 2)+
      geom_node_text(aes(label=FullName))
    
-   g + theme_graph()#+ facet_edges(~SentDate) #
+   g #+ theme_graph()
   }
   )
   
