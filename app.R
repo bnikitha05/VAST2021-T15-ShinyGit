@@ -132,6 +132,12 @@ df <- df %>%
   mutate(hour = get_hour(dt), min = get_minute(dt)) %>%
   rowid_to_column("ID")
 
+relabel_hours <- as_labeller(c(`17` = "1700H-1800H",
+                               `18` = "1800H-1900H",
+                               `19` = "1900H-2000H",
+                               `20` = "2000H-2100H",
+                               `21` = "2100H-2135H"))
+
 # MC3 Q1
 
 author <- df %>%
@@ -304,7 +310,7 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                           titlePanel(HTML("<center>Welcome to the Shiny App of Group 15</center>")),
                           hr(),
                           hr(),
-                          HTML("<h4>This application features insights from the data consisting collection of artifacts and emails  related to the GAStech company in the country Kronos. This data was obtained from <b>VAST challenge 2021</b>.</h4>"),
+                          HTML("<h4>This application features insights from the data consisting collection of artifacts and emails  related to the GAStech company in the country Kronos. This data was obtained from <b>VAST Challenge 2021</b>.</h4>"),
                           h4("The analysis in the application is scoped to investigate how events have unfolded on the day of incident in Kronos and to provide insights on the reputation of the company since its establishment."),
                           h4("The application is divided across various tabs and more information of each tab can be referred in <link to guide>. Go ahead and explore our application and become a detective!"),
                           h4("For more information on this project, please refer to our <Group Project Website>.")
@@ -457,8 +463,8 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                  navbarMenu("Message Stream Exploration",
                             tabPanel("Author Spam",
                                      titlePanel(HTML("<center>Exploring Authors for Spam</center>")),
-                                     sidebarLayout(
-                                       sidebarPanel(
+                                     fluidRow(
+                                       column(10, offset = 1,
                                          "Showing authors with the most messages
                                                     across time:",
                                          plotOutput("AuthorCount"),
@@ -467,11 +473,14 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                                      label = "Choose author to display messages
                                                      in the data table below: ",
                                                      choices = author,
-                                                     selected = "KronosQuoth")
-                                       ,width="40%"),
-                                       mainPanel(
+                                                     selected = "KronosQuoth"),
+                                         br()
+                                       )
+                                     ),
+                                     fluidRow(
+                                       column(10, offset = 1,
                                          DT::dataTableOutput(outputId = "AuthorMessages")
-                                       ,width="60%")
+                                       )
                                      )
                             ),
                             tabPanel("Word Cloud",
@@ -479,13 +488,15 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                      sidebarLayout(
                                        sidebarPanel(
                                            sliderInput(inputId = "min_wordcount",
-                                                       label = "Minimum Wordcount for Inclusion:",
+                                                       label = "Minimum wordcount for inclusion
+                                                       (choose higher values to reduce the words
+                                                       in the wordcloud):",
                                                        min = 4, max = 40, value = 10),
                                            sliderInput(inputId = "wc_size",
-                                                       label = "Wordcloud Size:",
+                                                       label = "Wordcloud size:",
                                                        min = 6, max = 24, value = 12),
                                            radioButtons(inputId = "wordcloud_type",
-                                                        label = "Wordcloud Type",
+                                                        label = "Wordcloud type",
                                                         choices = c("Single","Multiple (by hour)"),
                                                         selected = "Single")
                                        ),
@@ -495,11 +506,12 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                      )
                             ),
                             tabPanel("TF-IDF Keywords",
-                                     titlePanel(HTML("<center>Exploring Key Topics - Keywords via TF-IDF</center>")),
+                                     titlePanel(HTML("<center>Exploring Key Topics - Keywords
+                                                     via TF-IDF</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                            radioButtons(inputId = "tfidf_type",
-                                                        label = "Type of TF-IDF Plot",
+                                                        label = "Type of TF-IDF plot",
                                                         choices = c("Unigram (single word)",
                                                                     "Bigram (word pair)"),
                                                         selected = "Bigram (word pair)"),
@@ -510,7 +522,7 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                            of equal tf-idf ranking",
                                            checkboxInput(inputId = "show_data1",
                                                          label = "Show data table (to understand
-                                                         context of keywords)",
+                                                         context of keywords by searching)",
                                                          value = F)
                                        ),
                                        mainPanel(
@@ -522,11 +534,12 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                  ),
                  navbarMenu("Risk Level Timeline",
                             tabPanel("By Call Centre Reports",
-                                     titlePanel(HTML("<center>Investigating Call Centre reports over time</center>")),
+                                     titlePanel(HTML("<center>Investigating Call Centre reports
+                                                     over time</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                          selectInput(inputId = "time_int1",
-                                                     label = "Choose time intervals",
+                                                     label = "Choose time intervals for data binning",
                                                      choices = c("1 Min" = 1,
                                                                  "5 Min" = 5,
                                                                  "10 Min" = 10,
@@ -543,7 +556,7 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                          The length is set at >30 characters",
                                          checkboxInput(inputId = "show_data2",
                                                        label = "Show data table",
-                                                       value = F)
+                                                       value = T)
                                        ),
                                        mainPanel(
                                            plotOutput("CCDataGraph"),
@@ -552,11 +565,12 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                      )
                             ),
                             tabPanel("By Microblog Messages",
-                                     titlePanel(HTML("<center>Investigating Microblog messages over time</center>")),
+                                     titlePanel(HTML("<center>Investigating Microblog messages
+                                                     over time</center>")),
                                      sidebarLayout(
                                        sidebarPanel(
                                          selectInput(inputId = "time_int2",
-                                                label = "Choose time intervals",
+                                                label = "Choose time intervals for data binning",
                                                 choices = c("1 Min" = 1,
                                                             "5 Min" = 5,
                                                             "10 Min" = 10,
@@ -566,49 +580,59 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                          checkboxInput(inputId = "show_bigram",
                                                        label = "Show TF-IDF Bigram (from Q1)",
                                                        value = T),
-                                         plotOutput("Tfidf_bigram_optional")
+                                         "Note: AFINN and NRC are two different approaches to
+                                         estimating sentiment level. AFINN assigns words with
+                                         a score between -5 and 5 for extent of negative/positive
+                                         sentiment, while NRC categorizes words into categories
+                                         like anger, joy, fear, surprise etc."
                                        ),
                                        mainPanel(
                                          tabsetPanel(
-                                           tabPanel("Message Count", plotOutput("MessageCountByTime")),
-                                           tabPanel("Unique Authors", plotOutput("UniqueAuthors")),
-                                           tabPanel("Sentiment (AFINN)", plotOutput("SentimentAfinn")),
-                                           tabPanel("Sentiment (NRC)", plotOutput("SentimentNRC"))
+                                           tabPanel("Message Count",
+                                                    plotOutput("MessageCountByTime"),
+                                                    plotOutput("Tfidf_bigram_optional1")),
+                                           tabPanel("Unique Authors",
+                                                    plotOutput("UniqueAuthors"),
+                                                    plotOutput("Tfidf_bigram_optional2")),
+                                           tabPanel("Sentiment (AFINN)",
+                                                    plotOutput("SentimentAfinn"),
+                                                    plotOutput("Tfidf_bigram_optional3")),
+                                           tabPanel("Sentiment (NRC)",
+                                                    plotOutput("SentimentNRC"),
+                                                    plotOutput("Tfidf_bigram_optional4"))
                                          )
                                        )
                                      )
                             )
                  ),
-                 tabPanel("Message Stream Geomap",
-                          titlePanel(HTML("<center>Geomap of messages with geo-located data</center>")),
+                 tabPanel("Event Geomap",
+                          titlePanel(HTML("<center>Map of Key Messages with Geolocation</center>")),
                           sidebarLayout(
                             sidebarPanel(
                               selectInput(inputId = "data_type",
                                           label = "Choose messages to include",
-                                          choices = c("MB Data only" = 1,
-                                                      "CC Data only" = 2,
-                                                      "Both MB and CC Data" = 3),
-                                          selected = 3),
-                              checkboxInput(inputId = "filter_sentiment",
-                                            label = "Filter only messages with negative sentiment",
-                                            value = T),
+                                          choices = c("Microblog messages only" = "mbonly",
+                                                      "Call centre reports only" = "cconly",
+                                                      "Both microblog and call centre messages" = "both"),
+                                          selected = "both"),
                               sliderInput(inputId = "timeframe",
-                                          label = "Timeframe:",
-                                          min = as.POSIXct("2014-01-24 17:00"),
-                                          max = as.POSIXct("2014-01-24 22:00"),
-                                          value = c(as.POSIXct("2014-01-24 17:00"),
-                                                    as.POSIXct("2014-01-24 22:00")),
+                                          label = "Specify timeframe of messages to be included:",
+                                          min = as.POSIXct("2014-01-23 17:00"),
+                                          max = as.POSIXct("2014-01-23 21:35"),
+                                          value = c(as.POSIXct("2014-01-23 17:00"),
+                                                    as.POSIXct("2014-01-23 21:35")),
                                           timeFormat = "%H:%M"
                                           ),
                               sliderInput(inputId = "jitter_level",
-                                          label = "Amount of jitter:",
-                                          min = 0, max = 2, value = 1, step = 0.05),
+                                          label = "Amount of jitter (lower for more accurate location,
+                                          higher for more separated points to sieve through messages)",
+                                          min = 0, max = 2, value = 1, step = 0.1),
                               sliderInput(inputId = "alpha_level",
-                                          label = "Alpha level (lower: more transparent)",
-                                          min = 0, max = 1, value = 0.7),
+                                          label = "Alpha level (lower - more transparent)",
+                                          min = 0, max = 1, value = 0.7, step = 0.1),
                               sliderInput(inputId = "bubble_size",
-                                          label = "Size of bubble",
-                                          min = 0, max = 1, value = 0.2)
+                                          label = "Point size",
+                                          min = 0, max = 1, value = 0.2, step = 0.1)
                             ),
                             mainPanel(
                               tmapOutput("data_GIS")
@@ -1000,8 +1024,8 @@ server <- function(input, output) {
       top_n(10,n) %>%
       mutate(author = reorder_within(author,n,hour)) %>%
       ggplot(aes(x = n, y = author, fill = hour)) + geom_col(show.legend = F) +
-      labs(x = "Number of Tweets",y="Authors")+
-      facet_wrap(~hour, scales = "free") + scale_y_reordered()
+      labs(x = "Number of Messages",y="Authors")+
+      facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered()
   })
   
   output$AuthorMessages <- DT::renderDataTable({
@@ -1032,7 +1056,7 @@ server <- function(input, output) {
               filter(n > input$min_wordcount) %>%
               ggplot(aes(label = word, size = n)) + geom_text_wordcloud(rm_outside = T) +
               scale_size_area(max_size = input$wc_size) +
-              facet_wrap(~hour)
+              facet_wrap(~hour, labeller = relabel_hours)
       }
       
   })
@@ -1049,7 +1073,7 @@ server <- function(input, output) {
               mutate(word = reorder_within(word, tf_idf, hour)) %>%
               ggplot(aes(tf_idf, word, fill = hour)) +
               geom_col(show.legend = FALSE) +
-              facet_wrap(~ hour, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+              facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered() + xlab("tf-idf")
       }else{
           df_tidyclean_bigram_tfidf %>%
               group_by(hour) %>%
@@ -1059,7 +1083,7 @@ server <- function(input, output) {
               mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
               ggplot(aes(tf_idf, bigram, fill = hour)) +
               geom_col(show.legend = FALSE) +
-              facet_wrap(~ hour, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+              facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered() + xlab("tf-idf")
       }
   })
   
@@ -1084,7 +1108,7 @@ server <- function(input, output) {
       summarise(count = n(), combined_text = paste0(message, collapse = " | ")) %>%
       ungroup %>%
       ggplot(aes(x = hour_15min, y = count))+
-      labs(x = "Hours",y="Number of Tweets") +
+      labs(x = "Time",y="Number of Messages") +
       geom_col()
   })
   
@@ -1098,7 +1122,7 @@ server <- function(input, output) {
     }
   })
   
-  output$Tfidf_bigram_optional <- renderPlot({
+  output$Tfidf_bigram_optional1 <- renderPlot({
     if(input$show_bigram){
       df_tidyclean_bigram_tfidf %>%
         group_by(hour) %>%
@@ -1108,7 +1132,49 @@ server <- function(input, output) {
         mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
         ggplot(aes(tf_idf, bigram, fill = hour)) +
         geom_col(show.legend = FALSE) +
-        facet_wrap(~ hour, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+        facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+      }
+  })
+
+  output$Tfidf_bigram_optional2 <- renderPlot({
+    if(input$show_bigram){
+      df_tidyclean_bigram_tfidf %>%
+        group_by(hour) %>%
+        slice_max(tf_idf, 
+                  n = input$top_n) %>% 
+        ungroup() %>%
+        mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
+        ggplot(aes(tf_idf, bigram, fill = hour)) +
+        geom_col(show.legend = FALSE) +
+        facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+    }
+  })
+  
+  output$Tfidf_bigram_optional3 <- renderPlot({
+    if(input$show_bigram){
+      df_tidyclean_bigram_tfidf %>%
+        group_by(hour) %>%
+        slice_max(tf_idf, 
+                  n = input$top_n) %>% 
+        ungroup() %>%
+        mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
+        ggplot(aes(tf_idf, bigram, fill = hour)) +
+        geom_col(show.legend = FALSE) +
+        facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered() + xlab("tf-idf")
+    }
+  })
+  
+  output$Tfidf_bigram_optional4 <- renderPlot({
+    if(input$show_bigram){
+      df_tidyclean_bigram_tfidf %>%
+        group_by(hour) %>%
+        slice_max(tf_idf, 
+                  n = input$top_n) %>% 
+        ungroup() %>%
+        mutate(bigram = reorder_within(bigram, tf_idf, hour)) %>%
+        ggplot(aes(tf_idf, bigram, fill = hour)) +
+        geom_col(show.legend = FALSE) +
+        facet_wrap(~hour, labeller = relabel_hours, scales = "free") + scale_y_reordered() + xlab("tf-idf")
     }
   })
   
@@ -1124,7 +1190,8 @@ server <- function(input, output) {
       group_by(hour_min) %>%
       summarise(count2 = sum(count)) %>%
       ungroup %>%
-      ggplot(aes(x = hour_min, y = count2)) + geom_col()
+      ggplot(aes(x = hour_min, y = count2)) + geom_col() +
+      labs(x = "Time", y="Number of Messsages")
   })
   
   output$UniqueAuthors <- renderPlot({
@@ -1136,7 +1203,8 @@ server <- function(input, output) {
       mutate(hour_min = date_time_build(2014,01,23,hour,
                                         min%/%as.integer(input$time_int2)*as.integer(input$time_int2),
                                         zone = "")) %>%
-      ggplot(aes(x = hour_min, y = author_count)) + geom_col()
+      ggplot(aes(x = hour_min, y = author_count)) + geom_col() +
+      labs(x = "Time", y = "Number of Unique Authors")
   })
   
   output$SentimentAfinn <- renderPlot({
@@ -1144,7 +1212,8 @@ server <- function(input, output) {
       mutate(hour_min = date_time_build(2014,01,23,hour,
                                         min%/%as.integer(input$time_int2)*as.integer(input$time_int2),
                                         zone = "")) %>%
-      ggplot(aes(x = hour_min, y = net_sentiment)) + geom_col()
+      ggplot(aes(x = hour_min, y = net_sentiment)) + geom_col() +
+      labs(x = "Time", y= "Net Sentiment Value")
   })
   
   output$SentimentNRC <- renderPlot({
@@ -1153,24 +1222,57 @@ server <- function(input, output) {
                                         min%/%as.integer(input$time_int2)*as.integer(input$time_int2),
                                         zone = "")) %>%
       ggplot(aes(x = hour_min, y = count, fill = sentiment)) + geom_col(show.legend = F) +
-      facet_wrap(~sentiment, nrow = 2)
+      facet_wrap(~sentiment, nrow = 2) +
+      labs(x = "Time", y= "Sentiment Level (for respective sentiments)")
   })
   
-  
+
+    
   output$data_GIS <- renderTmap({
-    tm_shape(Abila_st_lines) + tm_lines() +
-      tm_shape(df_ccdata_1str_sf %>% filter(str_length(message)>30)) +
+    data_GIS_outline <- tm_shape(Abila_st_lines) + tm_lines()
+    data_GIS_ccdata <- tm_shape(df_ccdata_1str_sf %>%
+                                  filter(dt > input$timeframe[1] & dt < input$timeframe[2]) %>%
+                                  filter(str_length(message)>30)) +
       tm_bubbles("hour", size = input$bubble_size, border.col = "darkgrey",
                  jitter = input$jitter_level, alpha = input$alpha_level,
                  palette="BuGn", popup.vars = c("dt","message")) +
-      tm_shape(df_ccdata_Xstr_gps_point) +
+      tm_shape(df_ccdata_Xstr_gps_point %>%
+                 filter(dt > input$timeframe[1] & dt < input$timeframe[2])) +
       tm_bubbles("hour", size = input$bubble_size, border.col = "darkgrey",
                  jitter = input$jitter_level, alpha = input$alpha_level,
-                 palette="BuGn", legend.col.show = F, popup.vars = c("dt","message")) +
-      tm_shape(df_mbdata_gps_point_sentiment) +
+                 palette="BuGn", legend.col.show = F, popup.vars = c("dt","message"))
+    data_GIS_mbdata <- tm_shape(df_mbdata_gps_point_sentiment %>%
+                                  filter(dt > input$timeframe[1] & dt < input$timeframe[2])) +
       tm_bubbles("hour", size = input$bubble_size, border.col = "darkgrey",
                  jitter = input$jitter_level, alpha = input$alpha_level,
                  popup.vars = c("dt","author","message"))
+    # tm_shape(Abila_st_lines) + tm_lines() +
+    #   tm_shape(df_ccdata_1str_sf %>%
+    #              filter(dt > input$timeframe[1] & dt < input$timeframe[2]) %>%
+    #              filter(str_length(message)>30)
+    #            ) +
+    #   tm_bubbles("hour", size = input$bubble_size, border.col = "darkgrey",
+    #              jitter = input$jitter_level, alpha = input$alpha_level,
+    #              palette="BuGn", popup.vars = c("dt","message")) +
+    #   tm_shape(df_ccdata_Xstr_gps_point %>%
+    #              filter(dt > input$timeframe[1] & dt < input$timeframe[2])
+    #            ) +
+    #   tm_bubbles("hour", size = input$bubble_size, border.col = "darkgrey",
+    #              jitter = input$jitter_level, alpha = input$alpha_level,
+    #              palette="BuGn", legend.col.show = F, popup.vars = c("dt","message")) +
+    #   tm_shape(df_mbdata_gps_point_sentiment %>%
+    #              filter(dt > input$timeframe[1] & dt < input$timeframe[2])
+    #            ) +
+    #   tm_bubbles("hour", size = input$bubble_size, border.col = "darkgrey",
+    #              jitter = input$jitter_level, alpha = input$alpha_level,
+    #              popup.vars = c("dt","author","message"))
+    if(input$data_type == "mbonly"){
+      data_GIS_outline + data_GIS_mbdata
+    }else if(input$data_type == "cconly"){
+      data_GIS_outline + data_GIS_ccdata
+    }else{
+      data_GIS_outline + data_GIS_mbdata + data_GIS_ccdata
+    }
   })
 }
 
