@@ -304,31 +304,10 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                           titlePanel(HTML("<center>Welcome to the Shiny App of Group 15</center>")),
                           hr(),
                           hr(),
-                          h4("This Shiny App tackles the VAST2021 Challenge and consists of two parts."),
-                          br(),
-                          HTML("<h4><b>Part 1- History of GastTech Company</b></h4>"),
-                          HTML("<h4>This part provides information of the history the GasTech company had and is further divided into 'Text Analysis' and 'Network Graph'<h4>"),
-                          HTML("<ul>
-                                 <li><h5>The 'Text Analysis' provides detailed visualization across four different plots of the news paper articles over the years showcasing the type of reputation the GasTech company has had.</h5>
-                                 <ul>
-                                 <li><h5>Comparision Cloud</h5></li>
-                                 <li><h5>Clustering</h5></li>
-                                 <li><h5>Word Co-occurrence</h5></li>
-                                 <li><h5>Correlation</h5></li>
-                                 </ul>
-                                 </li>
-                                 <li><h5>'Network Graph' on the other hand provides insights of the employess within GasTech company</h5>
-                                 <ul>
-                                 <li><h5>Relationship of Employees</h5></li>
-                                 <li><h5>Flow of Emails</h5></li>
-                                 <li><h5>Target Employee</h5></li>
-                                 </ul>
-                                 </li>
-                                 </ul>"),
-                          br(),
-                          HTML("<h4><b>Part 2- On the Day of Incident</b></h4>"),
-                          HTML("<h4>User can interact with the data in this part to gain insights on how events unfolded on the day of the incident.</h4>")
-                            
+                          HTML("<h4>This application features insights from the data consisting collection of artifacts and emails  related to the GAStech company in the country Kronos. This data was obtained from <b>VAST challenge 2021</b>.</h4>"),
+                          h4("The analysis in the application is scoped to investigate how events have unfolded on the day of incident in Kronos and to provide insights on the reputation of the company since its establishment."),
+                          h4("The application is divided across various tabs and more information of each tab can be referred in <link to guide>. Go ahead and explore our application and become a detective!"),
+                          h4("For more information on this project, please refer to our <Group Project Website>.")
                           
                           
                  ),
