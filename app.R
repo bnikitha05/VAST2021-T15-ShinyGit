@@ -613,6 +613,9 @@ ui <- navbarPage("Viz-Investigation of Kronos Incident", theme = shinytheme("san
                                                       "Call centre reports only" = "cconly",
                                                       "Both microblog and call centre messages" = "both"),
                                           selected = "both"),
+                              "Note: Orange-brown points represent microblog messages, while
+                              blue-green points represent call centre reports",
+                              br(),br(),
                               sliderInput(inputId = "timeframe",
                                           label = "Specify timeframe of messages to be included:",
                                           min = as.POSIXct("2014-01-23 17:00"),
